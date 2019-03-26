@@ -2,7 +2,6 @@
     "name": "scandipwa/route717",
     "type": "magento2-module",
     "description": "ScandiPWA dedicated router",
-    "version": "0.1.0",
     "keywords": [
         "magento2",
         "scandipwa",
