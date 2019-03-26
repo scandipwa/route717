@@ -1,4 +1,4 @@
-#ScandiPWA Route717
+# ScandiPWA Route717
 
 Module is providing custom router to properly resolve HTTP codes on specific page request.
 
