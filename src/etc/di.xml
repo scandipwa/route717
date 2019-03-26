@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @category  ScandiPWA
+ * @package   ScandiPWA\Route717
+ * @author    Ilja Lapkovskis <info@scandiweb.com / ilja@scandiweb.com>
+ * @copyright Copyright (c) 2019 Scandiweb, Ltd (http://scandiweb.com)
+ * @license   OSL-3.0
+ */
+-->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="ScandiPWA\Router\ValidationManagerInterface" type="ScandiPWA\Router\ValidationManager"/>
+    <type name="ScandiPWA\Router\ValidationManager">
+        <arguments>
+            <argument name="validators" xsi:type="array">
+                <item name="category" xsi:type="string">ScandiPWA\Router\Validator\Category</item>
+                <item name="product" xsi:type="string">ScandiPWA\Router\Validator\Product</item>
+                <item name="page" xsi:type="string">ScandiPWA\Router\Validator\Cms</item>
+                <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\Cart</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
