@@ -11,6 +11,7 @@ namespace ScandiPWA\Router\Controller;
 
 use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\DefaultPathInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\ResponseFactory;
@@ -21,18 +22,13 @@ use Magento\Framework\App\Router\Base as BaseRouter;
 use Magento\Framework\Code\NameBuilder;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
-use Magento\Framework\View\DesignInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Catalog\Controller\Product\View as ProductView;
-use Magento\Catalog\Controller\Category\View as CategoryView;
-use Magento\Cms\Controller\Page\View as PageView;
-use Magento\UrlRewrite\Controller\Router as UrlRewriteRouter;
+use Magento\UrlRewrite\Model\UrlFinderInterface;
+use Magento\UrlRewrite\Service\V1\Data\UrlRewrite;
 use ScandiPWA\Router\ValidationManagerInterface;
-
-
-use \Magento\Framework\App\Config\ScopeConfigInterface;
-use \Magento\Framework\View\Design\Theme\ThemeProviderInterface;
+use Magento\Framework\View\DesignInterface;
+use Magento\Framework\View\Design\Theme\ThemeProviderInterface;
 
 class Router extends BaseRouter
 {
@@ -52,14 +48,14 @@ class Router extends BaseRouter
     private $storeManager;
     
     /**
-     * @var UrlRewriteRouter
+     * @var UrlFinderInterface
      */
-    private $urlRewriteRouter;
+    private $urlFinder;
     
     /**
-     * @var BaseRouter
+     * @var ThemeProviderInterface
      */
-    private $baseRouter;
+    private $themeProvider;
     
     /**
      * Router constructor.
@@ -71,10 +67,11 @@ class Router extends BaseRouter
      * @param UrlInterface               $url
      * @param NameBuilder                $nameBuilder
      * @param PathConfigInterface        $pathConfig
-     * @param StoreManagerInterface      $storeManager
      * @param ValidationManagerInterface $validationManager
-     * @param UrlRewriteRouter           $urlRewriteRouter
-     * @param BaseRouter                 $baseRouter
+     * @param UrlFinderInterface         $urlFinder
+     * @param StoreManagerInterface      $storeManager
+     * @param ScopeConfigInterface       $scopeConfig
+     * @param ThemeProviderInterface     $themeProvider
      */
     public function __construct(
         ActionList $actionList,
@@ -85,20 +82,18 @@ class Router extends BaseRouter
         UrlInterface $url,
         NameBuilder $nameBuilder,
         PathConfigInterface $pathConfig,
-        StoreManagerInterface $storeManager,
         ValidationManagerInterface $validationManager,
-        UrlRewriteRouter $urlRewriteRouter,
-        BaseRouter $baseRouter,
+        UrlFinderInterface $urlFinder,
+        StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider
     )
     {
-        $this->storeManager = $storeManager;
-        $this->urlRewriteRouter = $urlRewriteRouter;
-        $this->baseRouter = $baseRouter;
-        $this->validationManager = $validationManager;
         $this->_scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
+        $this->validationManager = $validationManager;
+        $this->urlFinder = $urlFinder;
+        $this->storeManager = $storeManager;
         parent::__construct($actionList, $actionFactory, $defaultPath, $responseFactory, $routeConfig, $url, $nameBuilder, $pathConfig);
     }
     
@@ -120,32 +115,24 @@ class Router extends BaseRouter
             return null;
         }
         
-        
         $this->forceHttpRedirect($request);
-        $rewriteAction = $this->urlRewriteRouter->match($request);
-        /**
-         * @var Rewrite $action
-         */
-        $req = clone $request;
-        $defaultAction = $this->baseRouter->match($req);
-        $action = null;
+        $requestPath = $request->getPathInfo();
+        $storeId = $this->storeManager->getStore()->getId();
+        $rewrite = $this->urlFinder->findOneByData([
+            UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
+            UrlRewrite::STORE_ID => $storeId
+        ]);
         
-        $pwaAction = $this->validationManager->validate($request);
-        if ($pwaAction) {
+        
+        if ($rewrite) {
+            $action = $this->actionFactory->create(Pwa::class);
+            $action->setType($this->getDefaultActionType($rewrite));
+            $action->setCode(200)->setPhrase('OK');
+        } elseif ($this->validationManager->validate($request)) {
             $action = $this->actionFactory->create(Pwa::class);
             $action->setType('PWA_ROUTER');
             $action->setCode(200)->setPhrase('OK');
-        }
-        
-
-        
-        if ($rewriteAction) {
-            $action = $this->actionFactory->create(Pwa::class);
-            $action->setType($this->getDefaultActionType($defaultAction));
-            $action->setCode(200)->setPhrase('OK');
-        }
-        
-        if ($defaultAction instanceof \Magento\Cms\Controller\Index\DefaultNoRoute) {
+        } else {
             $action = $this->actionFactory->create(Pwa::class);
             $action->setType('NOT_FOUND');
             $action->setCode(404)->setPhrase('Not Found');
@@ -154,21 +141,23 @@ class Router extends BaseRouter
         return $action;
     }
     
+    
     /**
-     * @param ActionInterface $actionInstance
-     * @return string|null
+     * @param UrlRewrite $urlRewrite
+     * @return string
      */
-    protected function getDefaultActionType(ActionInterface $actionInstance)
+    protected function getDefaultActionType(UrlRewrite $urlRewrite)
     {
-        if ($actionInstance instanceof ProductView) {
-            return 'PRODUCT';
-        } elseif ($actionInstance instanceof CategoryView) {
-            return 'CATEGORY';
-        } elseif ($actionInstance instanceof PageView) {
+        $type = $urlRewrite->getEntityType();
+        if ($type === 'cms-page') {
             return 'CMS_PAGE';
+        } elseif ($type === 'category') {
+            return 'CATEGORY';
+        } elseif ($type === 'product') {
+            return 'PRODUCT';
         }
         
-        return null;
+        return 'CUSTOM';
     }
     
     /**
