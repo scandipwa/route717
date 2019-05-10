@@ -2,6 +2,15 @@
 
 Module is providing custom router to properly resolve HTTP codes on specific page request.
 
+## v1.1.0 update
+Custom router is now checking theme type in order to support URL rewrites. 
+You must ensure PWA theme type is set to `4` to utilize the options.
+
+[Installer](https://github.com/scandipwa/installer) is doing this automatically for any newly generated theme.
+
+For already generated theme please update manually: set PWA theme type to `4` in `theme` table.
+
+
 ## Installation
 ```composer require scandipwa/route717```
 
