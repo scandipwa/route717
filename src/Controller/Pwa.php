@@ -9,6 +9,8 @@ use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Framework\App\Action\Action;
@@ -16,6 +18,8 @@ use Magento\Framework\App\Action\Action;
 
 class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterface
 {
+    const ACTION_TYPE_COOKIE = 'action_type';
+
     /**
      * @var PageFactory $resultPageFactory
      */
@@ -35,7 +39,17 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
      * @var string
      */
     protected $phrase;
-    
+
+    /**
+     * @var CookieManagerInterface
+     */
+    private $cookieManager;
+
+    /**
+     * @var CookieMetadataFactory
+     */
+    private $cookieMetadataFactory;
+
     /**
      * @param string $type
      * @return $this
@@ -68,15 +82,21 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     
     /**
      * Rewrite constructor.
-     * @param Context     $context
-     * @param PageFactory $resultPageFactory
+     * @param Context                $context
+     * @param PageFactory            $resultPageFactory
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
      */
     public function __construct(
         Context $context,
-        PageFactory $resultPageFactory
+        PageFactory $resultPageFactory,
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory
     )
     {
         $this->resultPageFactory = $resultPageFactory;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->type = 'PWA_ROUTER';
         parent::__construct($context);
     }
@@ -88,14 +108,29 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     public function execute()
     {
         $this->validate();
+        $this->setActionCookie($this->type);
         $resultLayout = $this->resultPageFactory->create();
         $resultLayout->setStatusHeader($this->code, '1.1', $this->phrase);
         $resultLayout->setHeader('X-Status', $this->phrase);
-        $resultLayout->setAction($this->type);
         
         return $resultLayout;
     }
-    
+
+    /**
+     * Sets cookie with action type.
+     * @param string $type
+     * @throws \Magento\Framework\Exception\InputException
+     * @throws \Magento\Framework\Stdlib\Cookie\CookieSizeLimitReachedException
+     * @throws \Magento\Framework\Stdlib\Cookie\FailureToSendException
+     */
+    protected function setActionCookie(string $type): void
+    {
+        $publicCookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
+                              ->setPath('/')
+                              ->setHttpOnly(false);
+        $this->cookieManager->setPublicCookie(self::ACTION_TYPE_COOKIE, $type, $publicCookieMetadata);
+    }
+
     protected function validate()
     {
         if (!$this->code || !$this->phrase || !$this->type) {

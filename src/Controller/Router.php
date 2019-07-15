@@ -141,7 +141,7 @@ class Router extends BaseRouter
         return $action;
     }
     
-    
+
     /**
      * @param UrlRewrite $urlRewrite
      * @return string
