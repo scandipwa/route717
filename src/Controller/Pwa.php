@@ -11,6 +11,7 @@ use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Framework\App\Action\Action;
@@ -49,6 +50,10 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
      * @var CookieMetadataFactory
      */
     private $cookieMetadataFactory;
+    /**
+     * @var SessionManagerInterface
+     */
+    private $sessionManager;
 
     /**
      * @param string $type
@@ -91,12 +96,14 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         Context $context,
         PageFactory $resultPageFactory,
         CookieManagerInterface $cookieManager,
-        CookieMetadataFactory $cookieMetadataFactory
+        CookieMetadataFactory $cookieMetadataFactory,
+        SessionManagerInterface $sessionManager
     )
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->sessionManager = $sessionManager;
         $this->type = 'PWA_ROUTER';
         parent::__construct($context);
     }
@@ -126,8 +133,9 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     protected function setActionCookie(string $type): void
     {
         $publicCookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                              ->setPath('/')
-                              ->setHttpOnly(false);
+                              ->setPath($this->sessionManager->getCookiePath())
+                              ->setDomain($this->sessionManager->getCookieDomain())
+                              ->setHttpOnly(true);
         $this->cookieManager->setPublicCookie(self::ACTION_TYPE_COOKIE, $type, $publicCookieMetadata);
     }
 
