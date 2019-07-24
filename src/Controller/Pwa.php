@@ -135,7 +135,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $publicCookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                               ->setPath($this->sessionManager->getCookiePath())
                               ->setDomain($this->sessionManager->getCookieDomain())
-                              ->setHttpOnly(true);
+                              ->setHttpOnly(false);
         $this->cookieManager->setPublicCookie(self::ACTION_TYPE_COOKIE, $type, $publicCookieMetadata);
     }
 
