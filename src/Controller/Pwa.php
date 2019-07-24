@@ -35,7 +35,12 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
      * @var string
      */
     protected $phrase;
-    
+
+    /**
+     * @var string
+     */
+    protected $redirectPath;
+
     /**
      * @param string $type
      * @return $this
@@ -45,7 +50,15 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->type = $type;
         return $this;
     }
-    
+
+    /**
+     * @return int
+     */
+    public function getCode(): int
+    {
+        return $this->code;
+    }
+
     /**
      * @param int $code
      * @return Pwa
@@ -65,7 +78,25 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->phrase = $phrase;
         return $this;
     }
-    
+
+    /**
+     * @return string
+     */
+    public function getRedirectPath(): string
+    {
+        return $this->redirectPath;
+    }
+
+    /**
+     * @param string $url
+     * @return Pwa
+     */
+    public function setRedirectPath(string $url): self
+    {
+        $this->redirectPath = $url;
+        return $this;
+    }
+
     /**
      * Rewrite constructor.
      * @param Context     $context
@@ -92,7 +123,11 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setStatusHeader($this->code, '1.1', $this->phrase);
         $resultLayout->setHeader('X-Status', $this->phrase);
         $resultLayout->setAction($this->type);
-        
+
+        if ($this->getRedirectPath()) {
+            $resultLayout->setHeader('Location', $this->getRedirectPath());
+        }
+
         return $resultLayout;
     }
     

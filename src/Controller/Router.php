@@ -127,7 +127,12 @@ class Router extends BaseRouter
         if ($rewrite) {
             $action = $this->actionFactory->create(Pwa::class);
             $action->setType($this->getDefaultActionType($rewrite));
-            $action->setCode(200)->setPhrase('OK');
+            $action->setCode($this->getDefaultActionCode($rewrite));
+            $action->setPhrase($this->getDefaultActionPhrase($rewrite));
+
+            if ($action->getCode() === 301 || $action->getCode() === 302) {
+                $action->setRedirectPath($rewrite->getTargetPath());
+            }
         } elseif ($this->validationManager->validate($request)) {
             $action = $this->actionFactory->create(Pwa::class);
             $action->setType('PWA_ROUTER');
@@ -159,7 +164,43 @@ class Router extends BaseRouter
         
         return 'CUSTOM';
     }
-    
+
+    /**
+     * @param UrlRewrite $urlRewrite
+     * @return int
+     */
+    protected function getDefaultActionCode(UrlRewrite $urlRewrite)
+    {
+        $code = $urlRewrite->getRedirectType();
+
+        switch ($code) {
+            case 301:
+                return 301;
+            case 302:
+                return 302;
+            default:
+                return 200;
+        }
+    }
+
+    /**
+     * @param UrlRewrite $urlRewrite
+     * @return string
+     */
+    protected function getDefaultActionPhrase(UrlRewrite $urlRewrite)
+    {
+        $code = $urlRewrite->getRedirectType();
+
+        switch ($code) {
+            case 301:
+                return 'Moved permanently';
+            case 302:
+                return 'Found';
+            default:
+                return 'OK';
+        }
+    }
+
     /**
      * @param RequestInterface $request
      * @throws NoSuchEntityException
