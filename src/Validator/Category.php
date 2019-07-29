@@ -56,7 +56,6 @@ class Category implements ValidatorInterface
         $category = $this->categoryCollection
             ->addAttributeToFilter('url_path', $urlPath)
             ->addAttributeToSelect(['entity_id'])
-            ->setLoadProductCount(true)
             ->getFirstItem();
         $categoryId = $category->getEntityId();
 
