@@ -70,18 +70,18 @@ class Category implements ValidatorInterface
     /**
      * Checks whether page exists on category
      * @param int $pageNumber
-     * @param int $productsInCategoryCount
+     * @param int $productsCount
      * @return bool
      */
-    private function doesPageExist(int $pageNumber, int $productsInCategoryCount): bool
+    private function doesPageExist(int $pageNumber, int $productsCount): bool
     {
         if ($pageNumber <= 0 ) return false;
 
         $pageSize = $this->scopeConfig->getValue('catalog/frontend/grid_per_page');
         // '< 0' - previous Page does not exist, '== 0' - previous page is the last page, '> 0' next page does exist
-        $previousPageProductsRemainingCount = $productsInCategoryCount - ($pageSize * ($pageNumber - 1));
+        $remainingProducts = $productsCount - ($pageSize * ($pageNumber - 1));
 
-        if ($previousPageProductsRemainingCount > 0) {
+        if ($remainingProducts > 0) {
             return true;
         }
 
