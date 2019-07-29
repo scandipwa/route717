@@ -10,6 +10,7 @@
 namespace ScandiPWA\Router\Validator;
 
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\RequestInterface;
 use ScandiPWA\Router\PathTrait;
 use ScandiPWA\Router\ValidatorInterface;
@@ -23,14 +24,23 @@ class Category implements ValidatorInterface
      * @var Collection
      */
     protected $categoryCollection;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
 
     /**
      * Category constructor.
-     * @param Collection $categoryCollection
+     * @param Collection           $categoryCollection
+     * @param ScopeConfigInterface $scopeConfig
      */
-    public function __construct(Collection $categoryCollection)
+    public function __construct(
+        Collection $categoryCollection,
+        ScopeConfigInterface $scopeConfig
+    )
     {
         $this->categoryCollection = $categoryCollection;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -46,9 +56,36 @@ class Category implements ValidatorInterface
         $category = $this->categoryCollection
             ->addAttributeToFilter('url_path', $urlPath)
             ->addAttributeToSelect(['entity_id'])
+            ->setLoadProductCount(true)
             ->getFirstItem();
         $categoryId = $category->getEntityId();
 
-        return !!$categoryId;
+        if (!$categoryId) return false;
+
+        $pageNumber = $request->getParam('page') ?? 1;
+        $productsCount = $category->getProductCollection()->count();
+
+        return $this->doesPageExist($pageNumber, $productsCount);
+    }
+
+    /**
+     * Checks whether page exists on category
+     * @param int $pageNumber
+     * @param int $productsInCategoryCount
+     * @return bool
+     */
+    private function doesPageExist(int $pageNumber, int $productsInCategoryCount): bool
+    {
+        if ($pageNumber <= 0 ) return false;
+
+        $pageSize = $this->scopeConfig->getValue('catalog/frontend/grid_per_page');
+        // '< 0' - previous Page does not exist, '== 0' - previous page is the last page, '> 0' next page does exist
+        $previousPageProductsRemainingCount = $productsInCategoryCount - ($pageSize * ($pageNumber - 1));
+
+        if ($previousPageProductsRemainingCount > 0) {
+            return true;
+        }
+
+        return false;
     }
 }
