@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -44,8 +45,7 @@ class Product implements ValidatorInterface
         Collection $productCollection,
         Configurable $configurable,
         ProductModel $product
-    )
-    {
+    ) {
         $this->productCollection = $productCollection;
         $this->configurable = $configurable;
         $this->product = $product;
@@ -57,20 +57,26 @@ class Product implements ValidatorInterface
     public function validateRequest(RequestInterface $request): bool
     {
         $urlKey = $this->getPathFrontName($request);
+        $parameters = $request->getParams();
+
         $productCollection = $this->productCollection->clear();
         $productCollection->addAttributeToFilter('url_key', $urlKey);
-
         $ids = $productCollection->getAllIds();
         $productId = reset($ids);
 
-        if (!$productId) return false;
+        if (!$productId || empty($parameters)) {
+            return false;
+        }
 
         $typeIds = $productCollection->getProductTypeIds();
         $type = reset($typeIds);
-        $parameters = $request->getParams();
 
-        if ($type === Configurable::TYPE_CODE && !empty($parameters) && !$this->checkConfigurableProduct($productId, $parameters))
+        if (
+            $type === Configurable::TYPE_CODE &&
+            !$this->checkConfigurableProduct($productId, $parameters)
+        ) {
             return false;
+        }
 
         return true;
     }
@@ -81,9 +87,9 @@ class Product implements ValidatorInterface
      * @param array $parameters
      * @return bool
      */
-    protected function checkConfigurableProduct(int $productId, array $parameters): bool {
+    protected function checkConfigurableProduct(int $productId, array $parameters): bool
+    {
         $product = $this->product->load($productId);
-
         $attributes = $this->configurable->getConfigurableAttributes($product);
 
         foreach ($attributes as $attribute) {
@@ -94,11 +100,15 @@ class Product implements ValidatorInterface
                 unset($parameters[$attributeCode]);
                 $options = $attribute->getOptions();
 
-                if (array_search($parameterValue, array_column($options,  'value_index')) === false) return false;
+                if (array_search($parameterValue, array_column($options, 'value_index')) === false) {
+                    return false;
+                }
             }
         }
 
-        if (!empty($parameters)) return false;
+        if (!empty($parameters)) {
+            return false;
+        }
 
         return true;
     }
