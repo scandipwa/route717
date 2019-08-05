@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -37,8 +38,7 @@ class Category implements ValidatorInterface
     public function __construct(
         Collection $categoryCollection,
         ScopeConfigInterface $scopeConfig
-    )
-    {
+    ) {
         $this->categoryCollection = $categoryCollection;
         $this->scopeConfig = $scopeConfig;
     }
@@ -59,12 +59,14 @@ class Category implements ValidatorInterface
             ->getFirstItem();
         $categoryId = $category->getEntityId();
 
-        if (!$categoryId) return false;
+        if (!$categoryId) {
+            return false;
+        }
 
         $pageNumber = $request->getParam('page') ?? 1;
         $productsCount = $category->getProductCollection()->count();
 
-        return $this->doesPageExist($pageNumber, $productsCount);
+        return $this->pageExist($pageNumber, $productsCount);
     }
 
     /**
@@ -73,9 +75,11 @@ class Category implements ValidatorInterface
      * @param int $productsCount
      * @return bool
      */
-    private function doesPageExist(int $pageNumber, int $productsCount): bool
+    private function pageExist(int $pageNumber, int $productsCount): bool
     {
-        if ($pageNumber <= 0 ) return false;
+        if ($pageNumber <= 0) {
+            return false;
+        }
 
         $pageSize = $this->scopeConfig->getValue('catalog/frontend/grid_per_page');
         // '< 0' - previous Page does not exist, '== 0' - previous page is the last page, '> 0' next page does exist
