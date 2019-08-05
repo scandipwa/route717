@@ -11,7 +11,6 @@ namespace ScandiPWA\Router\Validator;
 
 
 use Magento\Catalog\Model\Product as ProductModel;
-use Magento\ConfigurableProduct\Api\Data\OptionValueInterface;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\App\RequestInterface;
 use ScandiPWA\Router\PathTrait;
