@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
