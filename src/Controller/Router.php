@@ -58,6 +58,11 @@ class Router extends BaseRouter
     private $themeProvider;
     
     /**
+     * @var array
+     */
+    private $ignoredURLs;
+
+    /**
      * Router constructor.
      * @param ActionList                 $actionList
      * @param ActionFactory              $actionFactory
@@ -86,7 +91,8 @@ class Router extends BaseRouter
         UrlFinderInterface $urlFinder,
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
-        ThemeProviderInterface $themeProvider
+        ThemeProviderInterface $themeProvider,
+        array $ignoredURLs
     )
     {
         $this->_scopeConfig = $scopeConfig;
@@ -94,6 +100,7 @@ class Router extends BaseRouter
         $this->validationManager = $validationManager;
         $this->urlFinder = $urlFinder;
         $this->storeManager = $storeManager;
+        $this->ignoredURLs = $ignoredURLs;
         parent::__construct($actionList, $actionFactory, $defaultPath, $responseFactory, $routeConfig, $url, $nameBuilder, $pathConfig);
     }
     
@@ -122,7 +129,11 @@ class Router extends BaseRouter
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
             UrlRewrite::STORE_ID => $storeId
         ]);
+
         
+        if ($this->isRequestIgnored($request)) {
+            return null;
+        }
         
         if ($rewrite) {
             $action = $this->actionFactory->create(Pwa::class);
@@ -174,6 +185,19 @@ class Router extends BaseRouter
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
     
+    protected function isRequestIgnored(RequestInterface $request): bool
+    {
+        $requestPath = $request->getPathInfo();
+
+        foreach ($this->ignoredURLs as $pattern) {
+            if (preg_match('/' . $pattern . '/', $requestPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param RequestInterface $request
      * @param string           $path
