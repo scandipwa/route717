@@ -184,7 +184,12 @@ class Router extends BaseRouter
         
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
-    
+
+    /**
+     * Checks whether request should be ignored using provided regular expression
+     * @param RequestInterface $request
+     * @return boolean
+     */
     protected function isRequestIgnored(RequestInterface $request): bool
     {
         $requestPath = $request->getPathInfo();
