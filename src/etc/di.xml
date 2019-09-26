@@ -21,6 +21,7 @@
                 <item name="product" xsi:type="string">ScandiPWA\Router\Validator\Product</item>
                 <item name="page" xsi:type="string">ScandiPWA\Router\Validator\Cms</item>
                 <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\Cart</item>
+                <item name="checkout" xsi:type="string">ScandiPWA\Router\Validator\Checkout</item>
             </argument>
         </arguments>
     </type>
