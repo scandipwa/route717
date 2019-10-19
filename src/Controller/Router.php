@@ -158,12 +158,21 @@ class Router extends BaseRouter
     {
         $requestPath = $request->getPathInfo();
         $storeId = $this->storeManager->getStore()->getId();
+        return $this->resolveRewrite($requestPath, $storeId);
+    }
+    
+    /**
+     * @param string $requestPath
+     * @param        $storeId
+     * @return UrlRewrite|null
+     */
+    protected function resolveRewrite(string $requestPath, int $storeId)
+    {
         return $this->urlFinder->findOneByData([
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
             UrlRewrite::STORE_ID => $storeId
         ]);
     }
-    
     
     /**
      * @param UrlRewrite $urlRewrite
