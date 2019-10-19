@@ -20,15 +20,15 @@
                 <item name="category" xsi:type="string">ScandiPWA\Router\Validator\Category</item>
                 <item name="product" xsi:type="string">ScandiPWA\Router\Validator\Product</item>
                 <item name="page" xsi:type="string">ScandiPWA\Router\Validator\Cms</item>
-                <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\Cart</item>
+                <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
             </argument>
         </arguments>
     </type>
     <virtualType name="ScandiPWA\Router\Controller\ConfigurableRouter" type="ScandiPWA\Router\Controller\Router">
         <arguments>
             <argument name="ignoredURLs" xsi:type="array">
-                <item name="confirmSubscribeToNewsletter" xsi:type="string">\/newsletter\/subscriber\/confirm\/.*</item>
-                <item name="unsubscribeFromNewslettter" xsi:type="string">\/newsletter\/subscriber\/unsubscribe\/.*</item>
+                <item name="confirmSubscribeToNewsletter" xsi:type="string">^/newsletter/subscriber/confirm/.*</item>
+                <item name="unsubscribeFromNewslettter" xsi:type="string">^/newsletter/subscriber/unsubscribe/.*</item>
             </argument>
         </arguments>
     </virtualType>

@@ -53,20 +53,26 @@ class ValidationManager implements ValidationManagerInterface
      */
     public function validate(RequestInterface $request): bool
     {
-        $path = trim($request->getPathInfo(), '/');
-        if ($path === '') {
+        $frontName = $this->getFrontName($request);
+        if ($frontName === '') { // Root
             return true;
         }
-
-        $params = explode('/', $path);
-        $frontName = reset($params);
         if (!array_key_exists($frontName, $this->validators)) {
             return false;
         }
 
-        $validator = $this->getValidatorInstance($frontName);
-
-        return $validator->validateRequest($request);
+        return $this->getValidatorInstance($frontName)->validateRequest($request);
+    }
+    
+    /**
+     * @param RequestInterface $request
+     * @return mixed
+     */
+    protected function getFrontName(RequestInterface $request)
+    {
+        $path = trim($request->getPathInfo(), '/');
+        $params = explode('/', $path);
+        return reset($params);
     }
 
     /**
@@ -77,6 +83,15 @@ class ValidationManager implements ValidationManagerInterface
     {
         $validator = $this->validators[$frontName];
 
+        return $this->getValidator($validator);
+    }
+    
+    /**
+     * @param string $validator
+     * @return mixed
+     */
+    protected function getValidator(string $validator)
+    {
         return $this->objectManager->get($validator);
     }
 }

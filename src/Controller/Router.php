@@ -21,6 +21,7 @@ use Magento\Framework\App\Router\PathConfigInterface;
 use Magento\Framework\App\Router\Base as BaseRouter;
 use Magento\Framework\Code\NameBuilder;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -61,7 +62,7 @@ class Router extends BaseRouter
      * @var array
      */
     private $ignoredURLs;
-
+    
     /**
      * Router constructor.
      * @param ActionList                 $actionList
@@ -92,7 +93,7 @@ class Router extends BaseRouter
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider,
-        array $ignoredURLs
+        array $ignoredURLs = []
     )
     {
         $this->_scopeConfig = $scopeConfig;
@@ -118,38 +119,49 @@ class Router extends BaseRouter
         );
         $theme = $this->themeProvider->getThemeById($themeId);
         $themeType = $theme->getType();
-        if ((int)$themeType !== 4) {
+        if ((int)$themeType !== 4) { // Use custom theme type to support PWA and non-PWA within one installation
+            return null;
+        }
+        if ($this->isRequestIgnored($request)) { // Bypass to standard router, i.e. for payment GW callbacks
             return null;
         }
         
         $this->forceHttpRedirect($request);
-        $requestPath = $request->getPathInfo();
-        $storeId = $this->storeManager->getStore()->getId();
-        $rewrite = $this->urlFinder->findOneByData([
-            UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
-            UrlRewrite::STORE_ID => $storeId
-        ]);
-
-        
-        if ($this->isRequestIgnored($request)) {
-            return null;
-        }
-        
+        $action = $this->actionFactory->create(Pwa::class);
+        $rewrite = $this->getRewrite($request);
         if ($rewrite) {
-            $action = $this->actionFactory->create(Pwa::class);
+            // Do not execute any action for external rewrites,
+            // allow passing to default UrlRewrite router to make the work done
+            if ($rewrite->getEntityType() === 'custom') {
+                return null;
+            }
+            // Otherwise properly hint response for correct FE app placeholders
             $action->setType($this->getDefaultActionType($rewrite));
             $action->setCode(200)->setPhrase('OK');
-        } elseif ($this->validationManager->validate($request)) {
-            $action = $this->actionFactory->create(Pwa::class);
+        } elseif ($this->validationManager->validate($request)) { // Validate custom PWA routing
             $action->setType('PWA_ROUTER');
             $action->setCode(200)->setPhrase('OK');
-        } else {
-            $action = $this->actionFactory->create(Pwa::class);
+        } else { //Fallback to 404 but return PWA app
             $action->setType('NOT_FOUND');
             $action->setCode(404)->setPhrase('Not Found');
         }
         
         return $action;
+    }
+    
+    /**
+     * @param RequestInterface $request
+     * @return UrlRewrite|null
+     * @throws NoSuchEntityException
+     */
+    protected function getRewrite(RequestInterface $request)
+    {
+        $requestPath = $request->getPathInfo();
+        $storeId = $this->storeManager->getStore()->getId();
+        return $this->urlFinder->findOneByData([
+            UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
+            UrlRewrite::STORE_ID => $storeId
+        ]);
     }
     
     
@@ -184,38 +196,39 @@ class Router extends BaseRouter
         
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
-
+    
     /**
-     * Checks whether request should be ignored using provided regular expression
+     * Checks whether request is ignored using provided regular expression
      * @param RequestInterface $request
      * @return boolean
      */
     protected function isRequestIgnored(RequestInterface $request): bool
     {
         $requestPath = $request->getPathInfo();
-
+        
         foreach ($this->ignoredURLs as $pattern) {
-            if (preg_match('/' . $pattern . '/', $requestPath)) {
+            // Use | as delimiter to allow / without escaping
+            if (preg_match('|' . $pattern . '|', $requestPath)) {
                 return true;
             }
         }
-
+        
         return false;
     }
-
+    
     /**
      * @param RequestInterface $request
      * @param string           $path
      * @throws NoSuchEntityException
      */
-    protected function _checkShouldBeSecure(\Magento\Framework\App\RequestInterface $request, $path = '')
+    protected function _checkShouldBeSecure(RequestInterface $request, $path = '')
     {
         if ($request->getPostValue()) {
             return;
         }
         
         if ($this->pathConfig->shouldBeSecure($path) && !$request->isSecure()) {
-            $alias = $request->getAlias(\Magento\Framework\Url::REWRITE_REQUEST_PATH_ALIAS) ?: $request->getPathInfo();
+            $alias = $request->getAlias(Url::REWRITE_REQUEST_PATH_ALIAS) ?: $request->getPathInfo();
             $url = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB) . "$alias";
             
             
