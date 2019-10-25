@@ -127,6 +127,7 @@ class Router extends BaseRouter
         }
         
         $this->forceHttpRedirect($request);
+        $this->redirectOn301($request);
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
         if ($rewrite) {
@@ -205,7 +206,30 @@ class Router extends BaseRouter
         
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
-    
+
+    /**
+     * Redirect user if it is required per URL Rewrite
+     * *NOTE* It process requests counting in categories URL precondition
+     *
+     * @param RequestInterface $request
+     * @return void
+     */
+    protected function redirectOn301(RequestInterface $request): void
+    {
+        $requestPath = str_replace('category/', '', $request->getPathInfo());
+        $rewrite = $this->resolveRewrite($requestPath);
+
+        if ($rewrite && $rewrite->getRedirectType() === 301) {
+
+            $target = '/' . $rewrite->getTargetPath();
+            if ($rewrite->getEntityType() === 'category') {
+                $target = '/category' . $target;
+            }
+
+            $this->_performRedirect($target);
+        }
+    }
+
     /**
      * Checks whether request is ignored using provided regular expression
      * @param RequestInterface $request
@@ -244,9 +268,20 @@ class Router extends BaseRouter
             if ($this->_shouldRedirectToSecure()) {
                 $url = $this->_url->getRedirectUrl($url);
             }
-            
-            $this->_responseFactory->create()->setRedirect($url)->sendResponse();
-            exit;
+
+            $this->_performRedirect($url);
         }
+    }
+
+    /**
+     * Performs redirect
+     *
+     * @param string $url
+     * @return void
+     */
+    protected function _performRedirect(string $url): void
+    {
+        $this->_responseFactory->create()->setRedirect($url)->sendResponse();
+        exit;
     }
 }
