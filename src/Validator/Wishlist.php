@@ -9,13 +9,12 @@
 
 namespace ScandiPWA\Router\Validator;
 
+use Magento\Framework\App\RequestInterface;
+use Magento\Wishlist\Model\ResourceModel\Wishlist as WishlistResourceModel;
+use Magento\Wishlist\Model\Wishlist as WishlistModel;
+use Magento\Wishlist\Model\WishlistFactory;
 use ScandiPWA\Router\PathTrait;
 use ScandiPWA\Router\ValidatorInterface;
-use Magento\Framework\App\RequestInterface;
-use Magento\Wishlist\Model\WishlistFactory;
-use Magento\Wishlist\Model\Wishlist as WishlistModel;
-use Magento\Wishlist\Model\ResourceModel\Wishlist as WishlistResourceModel;
-
 
 class Wishlist implements ValidatorInterface
 {
