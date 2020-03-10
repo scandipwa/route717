@@ -157,14 +157,14 @@ class Router extends BaseRouter
      */
     protected function getRewrite(RequestInterface $request)
     {
-        $requestPath = $request->getPathInfo();
+        $requestPath = str_replace(['/category/', '/product/'], '', $request->getPathInfo());
         return $this->resolveRewrite($requestPath);
     }
     
     /**
      * @param string $requestPath
-     * @param        $storeId
      * @return UrlRewrite|null
+     * @throws NoSuchEntityException
      */
     protected function resolveRewrite(string $requestPath)
     {
@@ -174,7 +174,7 @@ class Router extends BaseRouter
             UrlRewrite::STORE_ID => $storeId
         ]);
     }
-    
+
     /**
      * @param UrlRewrite $urlRewrite
      * @return string
@@ -213,17 +213,21 @@ class Router extends BaseRouter
      *
      * @param RequestInterface $request
      * @return void
+     * @throws NoSuchEntityException
      */
     protected function redirectOn301(RequestInterface $request): void
     {
-        $requestPath = str_replace('category/', '', $request->getPathInfo());
+        $requestPath = str_replace(['/category/', '/product/'], '', $request->getPathInfo());
         $rewrite = $this->resolveRewrite($requestPath);
 
         if ($rewrite && $rewrite->getRedirectType() === 301) {
 
-            $target = '/' . $rewrite->getTargetPath();
+            $target = $rewrite->getTargetPath();
             if ($rewrite->getEntityType() === 'category') {
-                $target = '/category' . $target;
+                $target = '/category/' . $target;
+            }
+            if ($rewrite->getEntityType() === 'product') {
+                $target = '/product/' . $target;
             }
 
             $this->_performRedirect($target);
@@ -263,7 +267,6 @@ class Router extends BaseRouter
         if ($this->pathConfig->shouldBeSecure($path) && !$request->isSecure()) {
             $alias = $request->getAlias(Url::REWRITE_REQUEST_PATH_ALIAS) ?: $request->getPathInfo();
             $url = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB) . "$alias";
-            
             
             if ($this->_shouldRedirectToSecure()) {
                 $url = $this->_url->getRedirectUrl($url);
