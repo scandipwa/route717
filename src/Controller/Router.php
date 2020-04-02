@@ -94,15 +94,24 @@ class Router extends BaseRouter
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider,
         array $ignoredURLs = []
-    )
-    {
+    ) {
         $this->_scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
         $this->urlFinder = $urlFinder;
         $this->storeManager = $storeManager;
         $this->ignoredURLs = $ignoredURLs;
-        parent::__construct($actionList, $actionFactory, $defaultPath, $responseFactory, $routeConfig, $url, $nameBuilder, $pathConfig);
+
+        parent::__construct(
+            $actionList,
+            $actionFactory,
+            $defaultPath,
+            $responseFactory,
+            $routeConfig,
+            $url,
+            $nameBuilder,
+            $pathConfig
+        );
     }
     
     /**
@@ -117,25 +126,31 @@ class Router extends BaseRouter
             ScopeInterface::SCOPE_STORE,
             $this->storeManager->getStore()->getId()
         );
+
         $theme = $this->themeProvider->getThemeById($themeId);
         $themeType = $theme->getType();
-        if ((int)$themeType !== 4) { // Use custom theme type to support PWA and non-PWA within one installation
+
+        if ((int) $themeType !== 4) { // Use custom theme type to support PWA and non-PWA within one installation
             return null;
         }
+
         if ($this->isRequestIgnored($request)) { // Bypass to standard router, i.e. for payment GW callbacks
             return null;
         }
         
         $this->forceHttpRedirect($request);
         $this->redirectOn301($request);
+
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
+
         if ($rewrite) {
             // Do not execute any action for external rewrites,
             // allow passing to default UrlRewrite router to make the work done
             if ($rewrite->getEntityType() === 'custom') {
                 return null;
             }
+
             // Otherwise properly hint response for correct FE app placeholders
             $action->setType($this->getDefaultActionType($rewrite));
             $action->setCode(200)->setPhrase('OK');
@@ -182,6 +197,7 @@ class Router extends BaseRouter
     protected function getDefaultActionType(UrlRewrite $urlRewrite)
     {
         $type = $urlRewrite->getEntityType();
+
         if ($type === 'cms-page') {
             return 'CMS_PAGE';
         } elseif ($type === 'category') {
@@ -217,17 +233,13 @@ class Router extends BaseRouter
      */
     protected function redirectOn301(RequestInterface $request): void
     {
-        $requestPath = str_replace(['/category/', '/product/'], '', $request->getPathInfo());
-        $rewrite = $this->resolveRewrite($requestPath);
+        $rewrite = $this->resolveRewrite($request->getPathInfo());
 
         if ($rewrite && $rewrite->getRedirectType() === 301) {
-
             $target = $rewrite->getTargetPath();
-            if ($rewrite->getEntityType() === 'category') {
-                $target = '/category/' . $target;
-            }
-            if ($rewrite->getEntityType() === 'product') {
-                $target = '/product/' . $target;
+
+            if ($target[0] !== '/') {
+                $target = '/' . $target;
             }
 
             $this->_performRedirect($target);
@@ -285,6 +297,5 @@ class Router extends BaseRouter
     protected function _performRedirect(string $url): void
     {
         $this->_responseFactory->create()->setRedirect($url)->sendResponse();
-        exit;
     }
 }
