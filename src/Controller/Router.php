@@ -137,7 +137,7 @@ class Router extends BaseRouter
         if ($this->isRequestIgnored($request)) { // Bypass to standard router, i.e. for payment GW callbacks
             return null;
         }
-        
+
         $this->forceHttpRedirect($request);
         $this->redirectOn301($request);
 
@@ -161,10 +161,10 @@ class Router extends BaseRouter
             $action->setType('NOT_FOUND');
             $action->setCode(404)->setPhrase('Not Found');
         }
-        
+
         return $action;
     }
-    
+
     /**
      * @param RequestInterface $request
      * @return UrlRewrite|null
@@ -172,10 +172,10 @@ class Router extends BaseRouter
      */
     protected function getRewrite(RequestInterface $request)
     {
-        $requestPath = str_replace(['/category/', '/product/'], '', $request->getPathInfo());
+        $requestPath = $request->getPathInfo();
         return $this->resolveRewrite($requestPath);
     }
-    
+
     /**
      * @param string $requestPath
      * @return UrlRewrite|null
@@ -184,6 +184,7 @@ class Router extends BaseRouter
     protected function resolveRewrite(string $requestPath)
     {
         $storeId = $this->storeManager->getStore()->getId();
+
         return $this->urlFinder->findOneByData([
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
             UrlRewrite::STORE_ID => $storeId
@@ -205,10 +206,10 @@ class Router extends BaseRouter
         } elseif ($type === 'product') {
             return 'PRODUCT';
         }
-        
+
         return 'CUSTOM';
     }
-    
+
     /**
      * @param RequestInterface $request
      * @throws NoSuchEntityException
@@ -219,7 +220,7 @@ class Router extends BaseRouter
         $actionPath = $this->matchActionPath($request, $params['actionPath']);
         $action = $request->getActionName() ?: ($params['actionName'] ?: $this->_defaultPath->getPart('action'));
         $moduleFrontName = $this->matchModuleFrontName($request, $params['moduleFrontName']);
-        
+
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
 
@@ -244,6 +245,19 @@ class Router extends BaseRouter
 
             $this->_performRedirect($target);
         }
+    }
+
+    /**
+     * Performs redirect
+     *
+     * @param string $url
+     * @return void
+     */
+    protected function _performRedirect(string $url): void
+    {
+        $this->_responseFactory->create()->setRedirect($url)->sendResponse();
+        // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
+        exit;
     }
 
     /**
@@ -286,16 +300,5 @@ class Router extends BaseRouter
 
             $this->_performRedirect($url);
         }
-    }
-
-    /**
-     * Performs redirect
-     *
-     * @param string $url
-     * @return void
-     */
-    protected function _performRedirect(string $url): void
-    {
-        $this->_responseFactory->create()->setRedirect($url)->sendResponse();
     }
 }
