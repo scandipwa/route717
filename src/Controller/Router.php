@@ -94,15 +94,24 @@ class Router extends BaseRouter
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider,
         array $ignoredURLs = []
-    )
-    {
+    ) {
         $this->_scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
         $this->urlFinder = $urlFinder;
         $this->storeManager = $storeManager;
         $this->ignoredURLs = $ignoredURLs;
-        parent::__construct($actionList, $actionFactory, $defaultPath, $responseFactory, $routeConfig, $url, $nameBuilder, $pathConfig);
+
+        parent::__construct(
+            $actionList,
+            $actionFactory,
+            $defaultPath,
+            $responseFactory,
+            $routeConfig,
+            $url,
+            $nameBuilder,
+            $pathConfig
+        );
     }
     
     /**
@@ -117,24 +126,31 @@ class Router extends BaseRouter
             ScopeInterface::SCOPE_STORE,
             $this->storeManager->getStore()->getId()
         );
+
         $theme = $this->themeProvider->getThemeById($themeId);
         $themeType = $theme->getType();
-        if ((int)$themeType !== 4) { // Use custom theme type to support PWA and non-PWA within one installation
+
+        if ((int) $themeType !== 4) { // Use custom theme type to support PWA and non-PWA within one installation
             return null;
         }
+
         if ($this->isRequestIgnored($request)) { // Bypass to standard router, i.e. for payment GW callbacks
             return null;
         }
-        
+
         $this->forceHttpRedirect($request);
+        $this->redirectOn301($request);
+
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
+
         if ($rewrite) {
             // Do not execute any action for external rewrites,
             // allow passing to default UrlRewrite router to make the work done
             if ($rewrite->getEntityType() === 'custom') {
                 return null;
             }
+
             // Otherwise properly hint response for correct FE app placeholders
             $action->setType($this->getDefaultActionType($rewrite));
             $action->setCode(200)->setPhrase('OK');
@@ -145,10 +161,10 @@ class Router extends BaseRouter
             $action->setType('NOT_FOUND');
             $action->setCode(404)->setPhrase('Not Found');
         }
-        
+
         return $action;
     }
-    
+
     /**
      * @param RequestInterface $request
      * @return UrlRewrite|null
@@ -159,21 +175,22 @@ class Router extends BaseRouter
         $requestPath = $request->getPathInfo();
         return $this->resolveRewrite($requestPath);
     }
-    
+
     /**
      * @param string $requestPath
-     * @param        $storeId
      * @return UrlRewrite|null
+     * @throws NoSuchEntityException
      */
     protected function resolveRewrite(string $requestPath)
     {
         $storeId = $this->storeManager->getStore()->getId();
+
         return $this->urlFinder->findOneByData([
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
             UrlRewrite::STORE_ID => $storeId
         ]);
     }
-    
+
     /**
      * @param UrlRewrite $urlRewrite
      * @return string
@@ -181,6 +198,7 @@ class Router extends BaseRouter
     protected function getDefaultActionType(UrlRewrite $urlRewrite)
     {
         $type = $urlRewrite->getEntityType();
+
         if ($type === 'cms-page') {
             return 'CMS_PAGE';
         } elseif ($type === 'category') {
@@ -188,10 +206,10 @@ class Router extends BaseRouter
         } elseif ($type === 'product') {
             return 'PRODUCT';
         }
-        
+
         return 'CUSTOM';
     }
-    
+
     /**
      * @param RequestInterface $request
      * @throws NoSuchEntityException
@@ -202,10 +220,48 @@ class Router extends BaseRouter
         $actionPath = $this->matchActionPath($request, $params['actionPath']);
         $action = $request->getActionName() ?: ($params['actionName'] ?: $this->_defaultPath->getPart('action'));
         $moduleFrontName = $this->matchModuleFrontName($request, $params['moduleFrontName']);
-        
+
         $this->_checkShouldBeSecure($request, '/' . $moduleFrontName . '/' . $actionPath . '/' . $action);
     }
-    
+
+    /**
+     * Redirect user if it is required per URL Rewrite
+     * *NOTE* It process requests counting in categories URL precondition
+     *
+     * @param RequestInterface $request
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    protected function redirectOn301(RequestInterface $request): void
+    {
+        $rewrite = $this->resolveRewrite($request->getPathInfo());
+        $type = $rewrite->getRedirectType();
+
+        if ($rewrite && in_array($type, [301, 302])) {
+            $target = $rewrite->getTargetPath();
+
+            if ($target[0] !== '/') {
+                $target = '/' . $target;
+            }
+
+            $this->_performRedirect($target, $rewrite->getRedirectType());
+        }
+    }
+
+    /**
+     * Performs redirect
+     *
+     * @param string $url
+     * @param int $type
+     * @return void
+     */
+    protected function _performRedirect(string $url, int $type = 302): void
+    {
+        $this->_responseFactory->create()->setRedirect($url, $type)->sendResponse();
+        // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
+        exit;
+    }
+
     /**
      * Checks whether request is ignored using provided regular expression
      * @param RequestInterface $request
@@ -240,13 +296,11 @@ class Router extends BaseRouter
             $alias = $request->getAlias(Url::REWRITE_REQUEST_PATH_ALIAS) ?: $request->getPathInfo();
             $url = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB) . "$alias";
             
-            
             if ($this->_shouldRedirectToSecure()) {
                 $url = $this->_url->getRedirectUrl($url);
             }
-            
-            $this->_responseFactory->create()->setRedirect($url)->sendResponse();
-            exit;
+
+            $this->_performRedirect($url);
         }
     }
 }
