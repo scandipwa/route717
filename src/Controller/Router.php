@@ -235,15 +235,16 @@ class Router extends BaseRouter
     protected function redirectOn301(RequestInterface $request): void
     {
         $rewrite = $this->resolveRewrite($request->getPathInfo());
+        $type = $rewrite->getRedirectType();
 
-        if ($rewrite && $rewrite->getRedirectType() === 301) {
+        if ($rewrite && in_array($type, [301, 302])) {
             $target = $rewrite->getTargetPath();
 
             if ($target[0] !== '/') {
                 $target = '/' . $target;
             }
 
-            $this->_performRedirect($target);
+            $this->_performRedirect($target, $rewrite->getRedirectType());
         }
     }
 
@@ -251,11 +252,12 @@ class Router extends BaseRouter
      * Performs redirect
      *
      * @param string $url
+     * @param int $type
      * @return void
      */
-    protected function _performRedirect(string $url): void
+    protected function _performRedirect(string $url, int $type = 302): void
     {
-        $this->_responseFactory->create()->setRedirect($url)->sendResponse();
+        $this->_responseFactory->create()->setRedirect($url, $type)->sendResponse();
         // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
         exit;
     }
