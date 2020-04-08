@@ -235,9 +235,8 @@ class Router extends BaseRouter
     protected function redirectOn301(RequestInterface $request): void
     {
         $rewrite = $this->resolveRewrite($request->getPathInfo());
-        $type = $rewrite->getRedirectType();
 
-        if ($rewrite && in_array($type, [301, 302])) {
+        if ($rewrite && in_array($rewrite->getRedirectType(), [301, 302])) {
             $target = $rewrite->getTargetPath();
 
             if ($target[0] !== '/') {
