@@ -18,7 +18,7 @@ trait PathTrait
      * @param RequestInterface $request
      * @return string
      */
-    protected function getPathFrontName(RequestInterface $request): string
+    protected function getPathFrontName(RequestInterface $request)
     {
         $path = trim($request->getPathInfo(), '/');
         $params = explode('/', $path);
