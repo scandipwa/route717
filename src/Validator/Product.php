@@ -63,21 +63,19 @@ class Product implements ValidatorInterface
         $ids = $productCollection->getAllIds();
         $productId = reset($ids);
 
-        if (!$productId || empty($parameters)) {
+        if (!$productId) {
             return false;
         }
 
         $typeIds = $productCollection->getProductTypeIds();
         $type = reset($typeIds);
 
-        if (
-            $type === Configurable::TYPE_CODE &&
-            !$this->checkConfigurableProduct($productId, $parameters)
-        ) {
-            return false;
+        switch ($type) {
+            case Configurable::TYPE_CODE:
+                return $this->checkConfigurableProduct($productId, $parameters);
+            default:
+                return true;
         }
-
-        return true;
     }
 
     /**
@@ -88,24 +86,37 @@ class Product implements ValidatorInterface
      */
     protected function checkConfigurableProduct(int $productId, array $parameters): bool
     {
+        if (!count($parameters)) {
+            return true;
+        }
+
         $product = $this->product->load($productId);
         $attributes = $this->configurable->getConfigurableAttributes($product);
+        $attributeCount = 0;
 
+        // loop through all configurable product attributes
         foreach ($attributes as $attribute) {
             $attributeCode = $attribute->getProductAttribute()->getAttributeCode();
 
+            // if configurable attribute code is mentioned URL param
             if (array_key_exists($attributeCode, $parameters)) {
                 $parameterValue = $parameters[$attributeCode];
                 unset($parameters[$attributeCode]);
                 $options = $attribute->getOptions();
 
-                if (array_search($parameterValue, array_column($options, 'value_index')) === false) {
+                if (!in_array($parameterValue, array_column($options, 'value_index'), true)) {
                     return false;
                 }
+
+                $attributeCount++;
             }
         }
 
-        if (!empty($parameters)) {
+        if ($attributeCount !== count($attributes)) { // if all configurable attributes are not matched
+            return false;
+        }
+
+        if (!empty($parameters)) { // if all parameters were processed
             return false;
         }
 
