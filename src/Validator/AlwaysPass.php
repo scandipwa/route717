@@ -13,11 +13,9 @@ use Magento\Framework\App\RequestInterface;
 use ScandiPWA\Router\ValidatorInterface;
 
 /**
- * Class Cms
- * @deprecated 1.5.0 Implemented generic always pass
  * @package ScandiPWA\Router\Validator
  */
-class Cart implements ValidatorInterface
+class AlwaysPass implements ValidatorInterface
 {
     /**
      * @inheritdoc

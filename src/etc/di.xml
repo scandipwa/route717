@@ -13,14 +13,30 @@
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <preference for="ScandiPWA\Router\ValidationManagerInterface" type="ScandiPWA\Router\ValidationManager"/>
     <preference for="Magento\Framework\View\Result\Page" type="ScandiPWA\Router\View\Result\Page"/>
+    <preference for="ScandiPWA\Router\Controller\Router" type="ScandiPWA\Router\Controller\ConfigurableRouter"/>
+    <type name="Magento\Customer\Controller\Account\Confirm">
+        <plugin name="customize_email_validation_redirect"
+                type="ScandiPWA\Router\Controller\Customer\RedirectPlugin"></plugin>
+    </type>
     <type name="ScandiPWA\Router\ValidationManager">
         <arguments>
             <argument name="validators" xsi:type="array">
                 <item name="category" xsi:type="string">ScandiPWA\Router\Validator\Category</item>
                 <item name="product" xsi:type="string">ScandiPWA\Router\Validator\Product</item>
                 <item name="page" xsi:type="string">ScandiPWA\Router\Validator\Cms</item>
-                <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\Cart</item>
+                <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
+                <item name="wishlist" xsi:type="string">ScandiPWA\Router\Validator\Wishlist</item>
+                <item name="checkout" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
             </argument>
         </arguments>
     </type>
+    <virtualType name="ScandiPWA\Router\Controller\ConfigurableRouter" type="ScandiPWA\Router\Controller\Router">
+        <arguments>
+            <argument name="ignoredURLs" xsi:type="array">
+                <item name="confirmSubscribeToNewsletter" xsi:type="string">^/newsletter/subscriber/confirm/.*</item>
+                <item name="unsubscribeFromNewslettter" xsi:type="string">^/newsletter/subscriber/unsubscribe/.*</item>
+                <item name="validateCustomerEmail" xsi:type="string">^/customer/account/confirm/.*</item>
+            </argument>
+        </arguments>
+    </virtualType>
 </config>

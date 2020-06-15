@@ -32,3 +32,13 @@ Magento 2 routers.
 ## Customization
 To add new path you must provide your own validator, that must implement `ScandiPWA\Router\ValidatorInterface` and 
 register it as an array element passed to `ScandiPWA\Router\ValidationManager` using `di.xml`.
+
+
+## Accessing Magento 2 default routes
+In order to allow Magento 2 to handle some routes in default manner (only serverside functionality) you must allow
+ specific routes to be accessed by adding RegExp to `src/app/etc/di.xml::ignoredURLs` arguments list.
+ 
+So far there are 3 paths whitelisted out of the box:
+- `/newsletter/subscriber/confirm` - subscribe to newsletter
+- `/newsletter/subscriber/unsubscribe` - unsubscribe to newsletter
+- `/customer/account/confirm/` - confirm e-mail (redirect to homepage in any case, modify according to your needs)
