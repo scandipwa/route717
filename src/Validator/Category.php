@@ -11,24 +11,27 @@
 namespace ScandiPWA\Router\Validator;
 
 
+use Magento\Catalog\Model\Category as MagentoCategory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Exception\LocalizedException;
 use ScandiPWA\Router\PathTrait;
 use ScandiPWA\Router\ValidatorInterface;
 use Magento\Catalog\Model\ResourceModel\Category\Collection;
 
+/**
+ * Class Category
+ * @package ScandiPWA\Router\Validator
+ */
 class Category implements ValidatorInterface
 {
     use PathTrait;
 
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     protected $categoryCollection;
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
+
+    /** @var ScopeConfigInterface */
+    protected $scopeConfig;
 
     /**
      * Category constructor.
@@ -45,18 +48,18 @@ class Category implements ValidatorInterface
 
     /**
      * @inheritdoc
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws LocalizedException
      */
     public function validateRequest(RequestInterface $request): bool
     {
         $urlPath = $this->getPathFrontName($request);
-        /**
-         * @var $category \Magento\Catalog\Model\Category
-         */
+
+        /** @var $category MagentoCategory */
         $category = $this->categoryCollection
             ->addAttributeToFilter('url_path', $urlPath)
             ->addAttributeToSelect(['entity_id'])
             ->getFirstItem();
+
         $categoryId = $category->getEntityId();
 
         if (!$categoryId) {
@@ -85,10 +88,6 @@ class Category implements ValidatorInterface
         // '< 0' - previous Page does not exist, '== 0' - previous page is the last page, '> 0' next page does exist
         $remainingProducts = $productsCount - ($pageSize * ($pageNumber - 1));
 
-        if ($remainingProducts > 0) {
-            return true;
-        }
-
-        return false;
+        return $remainingProducts > 0;
     }
 }

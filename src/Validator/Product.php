@@ -9,19 +9,20 @@
 
 namespace ScandiPWA\Router\Validator;
 
-
 use Magento\Framework\App\RequestInterface;
 use ScandiPWA\Router\PathTrait;
 use ScandiPWA\Router\ValidatorInterface;
 use \Magento\Catalog\Model\ResourceModel\Product\Collection;
 
+/**
+ * Class Product
+ * @package ScandiPWA\Router\Validator
+ */
 class Product implements ValidatorInterface
 {
     use PathTrait;
 
-    /**
-     * @var Collection
-     */
+    /** @var Collection  */
     protected $productCollection;
 
     /**
@@ -44,6 +45,6 @@ class Product implements ValidatorInterface
         $ids = $productCollection->getAllIds();
         $productId = reset($ids);
 
-        return !!$productId;
+        return (bool) $productId;
     }
 }
