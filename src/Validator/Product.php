@@ -9,7 +9,6 @@
 
 namespace ScandiPWA\Router\Validator;
 
-
 use Magento\Catalog\Model\Product as ProductModel;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\App\RequestInterface;
@@ -17,13 +16,15 @@ use ScandiPWA\Router\PathTrait;
 use ScandiPWA\Router\ValidatorInterface;
 use \Magento\Catalog\Model\ResourceModel\Product\Collection;
 
+/**
+ * Class Product
+ * @package ScandiPWA\Router\Validator
+ */
 class Product implements ValidatorInterface
 {
     use PathTrait;
 
-    /**
-     * @var Collection
-     */
+    /** @var Collection  */
     protected $productCollection;
     /**
      * @var Configurable
