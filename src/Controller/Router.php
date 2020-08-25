@@ -37,32 +37,32 @@ class Router extends BaseRouter
      * @var ValidationManagerInterface
      */
     protected $validationManager;
-    
+
     /**
      * @var array
      */
     protected $paths;
-    
+
     /**
      * @var StoreManagerInterface
      */
     private $storeManager;
-    
+
     /**
      * @var UrlFinderInterface
      */
     private $urlFinder;
-    
+
     /**
      * @var ThemeProviderInterface
      */
     private $themeProvider;
-    
+
     /**
      * @var array
      */
     private $ignoredURLs;
-    
+
     /**
      * Router constructor.
      * @param ActionList                 $actionList
@@ -113,7 +113,7 @@ class Router extends BaseRouter
             $pathConfig
         );
     }
-    
+
     /**
      * @param RequestInterface $request
      * @return ActionInterface|null
@@ -238,12 +238,8 @@ class Router extends BaseRouter
 
         if ($rewrite && in_array($rewrite->getRedirectType(), [301, 302])) {
             $target = $rewrite->getTargetPath();
-
-            if ($target[0] !== '/') {
-                $target = '/' . $target;
-            }
-
-            $this->_performRedirect($target, $rewrite->getRedirectType());
+            $url = $this->_url->getDirectUrl($target);
+            $this->_performRedirect($url, $rewrite->getRedirectType());
         }
     }
 
@@ -269,17 +265,17 @@ class Router extends BaseRouter
     protected function isRequestIgnored(RequestInterface $request): bool
     {
         $requestPath = $request->getPathInfo();
-        
+
         foreach ($this->ignoredURLs as $pattern) {
             // Use | as delimiter to allow / without escaping
             if (preg_match('|' . $pattern . '|', $requestPath)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * @param RequestInterface $request
      * @param string           $path
@@ -290,11 +286,11 @@ class Router extends BaseRouter
         if ($request->getPostValue()) {
             return;
         }
-        
+
         if ($this->pathConfig->shouldBeSecure($path) && !$request->isSecure()) {
             $alias = $request->getAlias(Url::REWRITE_REQUEST_PATH_ALIAS) ?: $request->getPathInfo();
             $url = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB) . "$alias";
-            
+
             if ($this->_shouldRedirectToSecure()) {
                 $url = $this->_url->getRedirectUrl($url);
             }

@@ -16,14 +16,12 @@
     <preference for="ScandiPWA\Router\Controller\Router" type="ScandiPWA\Router\Controller\ConfigurableRouter"/>
     <type name="Magento\Customer\Controller\Account\Confirm">
         <plugin name="customize_email_validation_redirect"
-                type="ScandiPWA\Router\Controller\Customer\RedirectPlugin"></plugin>
+                type="ScandiPWA\Router\Controller\Customer\RedirectPlugin"
+        />
     </type>
     <type name="ScandiPWA\Router\ValidationManager">
         <arguments>
             <argument name="validators" xsi:type="array">
-                <item name="category" xsi:type="string">ScandiPWA\Router\Validator\Category</item>
-                <item name="product" xsi:type="string">ScandiPWA\Router\Validator\Product</item>
-                <item name="page" xsi:type="string">ScandiPWA\Router\Validator\Cms</item>
                 <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
                 <item name="wishlist" xsi:type="string">ScandiPWA\Router\Validator\Wishlist</item>
                 <item name="checkout" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
