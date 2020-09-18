@@ -37,4 +37,11 @@
             </argument>
         </arguments>
     </virtualType>
+    <type name="ScandiPWA\Customization\View\Result\Page">
+        <arguments>
+            <argument name="rootTemplatePool" xsi:type="array">
+                <item name="pwa-root" xsi:type="string">Magento_Theme::scandipwa_root.phtml</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
