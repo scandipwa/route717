@@ -98,7 +98,13 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setStatusHeader($this->code, '1.1', $this->phrase);
         $resultLayout->setHeader('X-Status', $this->phrase);
         $resultLayout->setAction($this->type);
-        
+        try{
+            $templateName = 'pwa-root';
+            $resultLayout->setRootTemplate($templateName);
+        } catch (\Exception $exception) {
+            throw new \Exception(__($templateName . ' template not found'));
+        }
+
         return $resultLayout;
     }
     

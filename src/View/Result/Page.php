@@ -86,6 +86,11 @@ class Page extends ExtendedPage
      * @var string;
      */
     private $action;
+
+    /**
+     * @var array;
+     */
+    private $rootTemplatePool;
     /**
      * Constructor
      *
@@ -101,6 +106,7 @@ class Page extends ExtendedPage
      * @param bool $isIsolated
      * @param View\EntitySpecificHandlesList $entitySpecificHandlesList
      * @param string $action
+     * @param array $rootTemplatePool
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -116,7 +122,8 @@ class Page extends ExtendedPage
         $template,
         $isIsolated = false,
         View\EntitySpecificHandlesList $entitySpecificHandlesList = null,
-        $action = null
+        $action = null,
+        $rootTemplatePool = []
     ) {
         parent::__construct(
             $context,
@@ -132,6 +139,7 @@ class Page extends ExtendedPage
             $entitySpecificHandlesList
         );
         $this->action = $action;
+        $this->rootTemplatePool = $rootTemplatePool;
     }
 
     /**
@@ -158,6 +166,21 @@ class Page extends ExtendedPage
     public function getAction()
     {
         return $this->action;
+    }
+    
+    /**
+     * @param string $template
+     * @return Page
+     * @throws Framework\Exception\LocalizedException
+     */
+    public function setRootTemplate($template)
+    {
+        if (in_array($template, array_keys($this->rootTemplatePool))) {
+            $this->template = $this->rootTemplatePool[$template];
+        } else {
+            throw new Framework\Exception\LocalizedException(__('Invalid root template specified'));
+        }
+        return $this;
     }
 
 }
