@@ -25,6 +25,7 @@
                 <item name="cart" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
                 <item name="wishlist" xsi:type="string">ScandiPWA\Router\Validator\Wishlist</item>
                 <item name="checkout" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
+                <item name="compare" xsi:type="string">ScandiPWA\Router\Validator\AlwaysPass</item>
             </argument>
         </arguments>
     </type>
