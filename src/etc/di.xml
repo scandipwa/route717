@@ -35,6 +35,7 @@
                 <item name="confirmSubscribeToNewsletter" xsi:type="string">^/newsletter/subscriber/confirm/.*</item>
                 <item name="unsubscribeFromNewslettter" xsi:type="string">^/newsletter/subscriber/unsubscribe/.*</item>
                 <item name="validateCustomerEmail" xsi:type="string">^/customer/account/confirm/.*</item>
+                <item name="pwaversion" xsi:type="string">^/scandipwa_version</item>
             </argument>
         </arguments>
     </virtualType>
