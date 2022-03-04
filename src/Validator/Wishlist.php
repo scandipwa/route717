@@ -43,6 +43,10 @@ class Wishlist implements ValidatorInterface
         $this->wishlistFactory = $wishlistFactory;
     }
 
+    /**
+     * @param RequestInterface $request
+     * @return bool
+     */
     public function validateRequest(RequestInterface $request): bool
     {
         if ($this->checkIfAccountWishlistTab($request)) {
@@ -60,6 +64,10 @@ class Wishlist implements ValidatorInterface
         return $this->checkIsShared($sharingKey);
     }
 
+    /**
+     * @param string $sharingKey
+     * @return bool
+     */
     protected function checkIsShared(string $sharingKey): bool
     {
         /** @var WishlistModel $wishlist */
