@@ -39,6 +39,5 @@ In order to allow Magento 2 to handle some routes in default manner (only server
  specific routes to be accessed by adding RegExp to `src/app/etc/di.xml::ignoredURLs` arguments list.
  
 So far there are 3 paths whitelisted out of the box:
-- `/newsletter/subscriber/confirm` - subscribe to newsletter
 - `/newsletter/subscriber/unsubscribe` - unsubscribe to newsletter
 - `/customer/account/confirm/` - confirm e-mail (redirect to homepage in any case, modify according to your needs)
