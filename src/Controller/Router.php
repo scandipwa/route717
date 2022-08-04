@@ -9,6 +9,10 @@
 
 namespace ScandiPWA\Router\Controller;
 
+use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
+use Magento\Cms\Api\GetPageByIdentifierInterface;
 use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -59,25 +63,44 @@ class Router extends BaseRouter
     private $themeProvider;
 
     /**
+     * @var CollectionFactory
+     */
+    protected CollectionFactory $productCollectionFactory;
+
+    /**
+     * @var CategoryRepositoryInterface
+     */
+    protected CategoryRepositoryInterface $categoryRepository;
+
+    /**
+     * @var GetPageByIdentifierInterface
+     */
+    protected GetPageByIdentifierInterface $getPageByIdentifier;
+
+
+    /**
      * @var array
      */
     private $ignoredURLs;
 
     /**
      * Router constructor.
-     * @param ActionList                 $actionList
-     * @param ActionFactory              $actionFactory
-     * @param DefaultPathInterface       $defaultPath
-     * @param ResponseFactory            $responseFactory
-     * @param ConfigInterface            $routeConfig
-     * @param UrlInterface               $url
-     * @param NameBuilder                $nameBuilder
-     * @param PathConfigInterface        $pathConfig
-     * @param ValidationManagerInterface $validationManager
-     * @param UrlFinderInterface         $urlFinder
-     * @param StoreManagerInterface      $storeManager
-     * @param ScopeConfigInterface       $scopeConfig
-     * @param ThemeProviderInterface     $themeProvider
+     * @param ActionList                   $actionList
+     * @param ActionFactory                $actionFactory
+     * @param DefaultPathInterface         $defaultPath
+     * @param ResponseFactory              $responseFactory
+     * @param ConfigInterface              $routeConfig
+     * @param UrlInterface                 $url
+     * @param NameBuilder                  $nameBuilder
+     * @param PathConfigInterface          $pathConfig
+     * @param ValidationManagerInterface   $validationManager
+     * @param UrlFinderInterface           $urlFinder
+     * @param StoreManagerInterface        $storeManager
+     * @param ScopeConfigInterface         $scopeConfig
+     * @param ThemeProviderInterface       $themeProvider
+     * @param CollectionFactory            $productCollectionFactory
+     * @param CategoryRepositoryInterface  $categoryRepository
+     * @param GetPageByIdentifierInterface $getPageByIdentifier
      */
     public function __construct(
         ActionList $actionList,
@@ -93,6 +116,9 @@ class Router extends BaseRouter
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider,
+        CollectionFactory $productCollectionFactory,
+        CategoryRepositoryInterface $categoryRepository,
+        GetPageByIdentifierInterface $getPageByIdentifier,
         array $ignoredURLs = []
     ) {
         $this->_scopeConfig = $scopeConfig;
@@ -101,6 +127,9 @@ class Router extends BaseRouter
         $this->urlFinder = $urlFinder;
         $this->storeManager = $storeManager;
         $this->ignoredURLs = $ignoredURLs;
+        $this->productCollectionFactory = $productCollectionFactory;
+        $this->categoryRepository = $categoryRepository;
+        $this->getPageByIdentifier = $getPageByIdentifier;
 
         parent::__construct(
             $actionList,
@@ -154,6 +183,36 @@ class Router extends BaseRouter
             // Otherwise properly hint response for correct FE app placeholders
             $action->setType($this->getDefaultActionType($rewrite));
             $action->setCode(200)->setPhrase('OK');
+
+            if ($this->getDefaultActionType($rewrite) === 'PRODUCT') {
+                $collection = $this->productCollectionFactory->create()
+                    ->addAttributeToFilter('status', ['eq' => Status::STATUS_ENABLED])
+                    ->addStoreFilter($rewrite->getStoreId());
+                $product = $collection->addIdFilter($rewrite->getEntityId())->getFirstItem();
+
+                if (!$product->hasData()) {
+                    $action->setType('NOT_FOUND');
+                    $action->setCode(404)->setPhrase('Not Found');
+                }
+            } elseif ($this->getDefaultActionType($rewrite) === 'CATEGORY') {
+                $storeId = $this->storeManager->getStore()->getId();
+                $category = $this->categoryRepository->get($rewrite->getEntityId(), $storeId);
+
+                if (!$category->getIsActive()) {
+                    $action->setType('NOT_FOUND');
+                    $action->setCode(404)->setPhrase('Not Found');
+                }
+            }
+            elseif ($this->getDefaultActionType($rewrite) === 'CMS_PAGE') {
+                $storeId = (int)$this->storeManager->getStore()->getId();
+
+                try {
+                    $page = $this->getPageByIdentifier->execute($rewrite->getRequestPath(), $storeId);
+                } catch (NoSuchEntityException $e) {
+                    $action->setType('NOT_FOUND');
+                    $action->setCode(404)->setPhrase('Not Found');
+                }
+            }
         } elseif ($this->validationManager->validate($request)) { // Validate custom PWA routing
             $action->setType('PWA_ROUTER');
             $action->setCode(200)->setPhrase('OK');
