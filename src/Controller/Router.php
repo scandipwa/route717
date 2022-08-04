@@ -77,7 +77,6 @@ class Router extends BaseRouter
      */
     protected GetPageByIdentifierInterface $getPageByIdentifier;
 
-
     /**
      * @var array
      */
