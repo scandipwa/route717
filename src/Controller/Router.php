@@ -33,6 +33,8 @@ use Magento\Framework\View\Design\Theme\ThemeProviderInterface;
 
 class Router extends BaseRouter
 {
+    const XML_PATH_THEME_USER_AGENT = 'design/theme/ua_regexp';
+
     /**
      * @var ValidationManagerInterface
      */
@@ -126,6 +128,24 @@ class Router extends BaseRouter
             ScopeInterface::SCOPE_STORE,
             $this->storeManager->getStore()->getId()
         );
+
+        $expressions = $this->_scopeConfig->getValue(
+            self::XML_PATH_THEME_USER_AGENT,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeManager->getStore()->getId()
+        );
+
+        if($expressions) {
+            $userAgentRules = json_decode($expressions, true);
+
+            foreach ($userAgentRules as $userAgentRule) {
+                $regexp = stripslashes($userAgentRule['regexp']);
+
+                if(preg_match($regexp, $_SERVER['HTTP_USER_AGENT'])) {
+                    $themeId = $userAgentRule['value'];
+                }
+            }
+        }
 
         $theme = $this->themeProvider->getThemeById($themeId);
         $themeType = $theme->getType();
