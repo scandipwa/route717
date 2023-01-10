@@ -33,7 +33,6 @@ use Magento\Framework\View\Design\Theme\ThemeProviderInterface;
 use Magento\Cms\Model\PageFactory;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
-use Magento\Catalog\Model\Product\Attribute\Source\Status;
 
 class Router extends BaseRouter
 {
@@ -54,6 +53,11 @@ class Router extends BaseRouter
      * @var array
      */
     protected $paths;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    protected $scopeConfig;
 
     /**
      * @var StoreManagerInterface
@@ -231,6 +235,10 @@ class Router extends BaseRouter
             $action->setCode(404)->setPhrase('Not Found');
         }
 
+        if ($this->isHomePage($request)) {
+            $this->setResponseHomePage($action);
+        }
+
         return $action;
     }
 
@@ -285,11 +293,6 @@ class Router extends BaseRouter
             ->setStoreId($this->storeId)
             ->load($id);
 
-        if (!$page->getId() || !$page->isActive()) {
-            $this->setNotFound($action);
-            return;
-        }
-
         $action->setId($page->getId() ?? '');
         $action->setIdentifier($page->getIdentifier() ?? '');
     }
@@ -306,11 +309,6 @@ class Router extends BaseRouter
     {
         try {
             $product = $this->productRepository->getById($id, false, $this->storeId);
-
-            if (!$product->getId() || $product->getStatus() != Status::STATUS_ENABLED) {
-                $this->setNotFound($action);
-                return;
-            }
 
             $action->setId($product->getId() ?? '');
             $action->setSku($product->getSku() ?? '');
@@ -332,11 +330,6 @@ class Router extends BaseRouter
     {
         try {
             $category = $this->categoryRepository->get($id, $this->storeId);
-
-            if (!$category->getIsActive()) {
-                $this->setNotFound($action);
-                return;
-            }
 
             $action->setId($category->getId() ?? '');
             $action->setName($category->getName() ?? '');
@@ -376,11 +369,10 @@ class Router extends BaseRouter
      */
     protected function resolveRewrite(string $requestPath)
     {
-        $storeId = $this->storeManager->getStore()->getId();
 
         return $this->urlFinder->findOneByData([
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
-            UrlRewrite::STORE_ID => $storeId
+            UrlRewrite::STORE_ID => $this->storeId
         ]);
     }
 
@@ -464,6 +456,30 @@ class Router extends BaseRouter
             if (preg_match('|' . $pattern . '|', $requestPath)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    protected function isHomePage(RequestInterface $request): bool
+    {
+        $requestPath = $request->getPathInfo();
+
+        if(!$requestPath) {
+            return true;
+        }
+
+        $storeCode = $this->storeManager->getStore()->getCode();
+
+        if (substr($requestPath, 0, 1) === '/' && $requestPath !== '/') {
+            $requestPath = ltrim($requestPath, '/');
+        }
+
+        $routes = explode('/', $requestPath);
+        [$code] = $routes;
+
+        if(count($routes) == 1 && $code == $storeCode) {
+            return true;
         }
 
         return false;
