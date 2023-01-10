@@ -276,6 +276,7 @@ class Router extends BaseRouter
             $this->storeId
         );
 
+        $action->setType(self::PAGE_TYPE_CMS_PAGE);
         $action->setIdentifier($homePageIdentifier ?? '');
     }
 
