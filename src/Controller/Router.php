@@ -476,8 +476,8 @@ class Router extends BaseRouter
             $requestPath = ltrim($requestPath, '/');
         }
 
-        $routes = explode('/', $requestPath);
-        [$code] = $routes;
+        $routes = array_filter(explode('/', $requestPath));
+        $code = $routes[0] ?? '';
 
         if(count($routes) == 1 && $code == $storeCode) {
             return true;
