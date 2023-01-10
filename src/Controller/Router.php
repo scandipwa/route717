@@ -30,10 +30,19 @@ use Magento\UrlRewrite\Service\V1\Data\UrlRewrite;
 use ScandiPWA\Router\ValidationManagerInterface;
 use Magento\Framework\View\DesignInterface;
 use Magento\Framework\View\Design\Theme\ThemeProviderInterface;
+use Magento\Cms\Model\PageFactory;
+use Magento\Catalog\Model\ProductRepository;
+use Magento\Catalog\Api\CategoryRepositoryInterface;
 
 class Router extends BaseRouter
 {
+    const XML_PATH_CMS_HOME_PAGE = 'web/default/cms_home_page';
     const XML_PATH_THEME_USER_AGENT = 'design/theme/ua_regexp';
+    const XML_PATH_CATALOG_DEFAULT_SORT_BY = 'catalog/frontend/default_sort_by';
+
+    const PAGE_TYPE_PRODUCT = 'PRODUCT';
+    const PAGE_TYPE_CATEGORY = 'CATEGORY';
+    const PAGE_TYPE_CMS_PAGE = 'CMS_PAGE';
 
     /**
      * @var ValidationManagerInterface
@@ -46,24 +55,49 @@ class Router extends BaseRouter
     protected $paths;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    protected $scopeConfig;
+
+    /**
      * @var StoreManagerInterface
      */
-    private $storeManager;
+    protected $storeManager;
 
     /**
      * @var UrlFinderInterface
      */
-    private $urlFinder;
+    protected $urlFinder;
 
     /**
      * @var ThemeProviderInterface
      */
-    private $themeProvider;
+    protected $themeProvider;
 
     /**
      * @var array
      */
-    private $ignoredURLs;
+    protected $ignoredURLs;
+
+    /**
+     * @var int|string
+     */
+    protected $storeId;
+
+    /**
+     * @var PageFactory
+     */
+    protected $pageFactory;
+
+    /**
+     * @var CategoryRepositoryInterface
+     */
+    protected $categoryRepository;
+
+    /**
+     * @var ProductRepository
+     */
+    protected $productRepository;
 
     /**
      * Router constructor.
@@ -80,6 +114,9 @@ class Router extends BaseRouter
      * @param StoreManagerInterface      $storeManager
      * @param ScopeConfigInterface       $scopeConfig
      * @param ThemeProviderInterface     $themeProvider
+     * @param PageFactory $pageFactory
+     * @param ProductRepository $productRepository
+     * @param CategoryRepositoryInterface $categoryRepository
      */
     public function __construct(
         ActionList $actionList,
@@ -95,14 +132,21 @@ class Router extends BaseRouter
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         ThemeProviderInterface $themeProvider,
+        PageFactory $pageFactory,
+        ProductRepository $productRepository,
+        CategoryRepositoryInterface $categoryRepository,
         array $ignoredURLs = []
     ) {
-        $this->_scopeConfig = $scopeConfig;
+        $this->scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
         $this->urlFinder = $urlFinder;
         $this->storeManager = $storeManager;
+        $this->pageFactory = $pageFactory;
+        $this->productRepository = $productRepository;
+        $this->categoryRepository = $categoryRepository;
         $this->ignoredURLs = $ignoredURLs;
+        $this->storeId = $this->storeManager->getStore()->getId();
 
         parent::__construct(
             $actionList,
@@ -123,16 +167,16 @@ class Router extends BaseRouter
      */
     public function match(RequestInterface $request)
     {
-        $themeId = $this->_scopeConfig->getValue(
+        $themeId = $this->scopeConfig->getValue(
             DesignInterface::XML_PATH_THEME_ID,
             ScopeInterface::SCOPE_STORE,
-            $this->storeManager->getStore()->getId()
+            $this->storeId
         );
 
-        $expressions = $this->_scopeConfig->getValue(
+        $expressions = $this->scopeConfig->getValue(
             self::XML_PATH_THEME_USER_AGENT,
             ScopeInterface::SCOPE_STORE,
-            $this->storeManager->getStore()->getId()
+            $this->storeId
         );
 
         if($expressions) {
@@ -164,6 +208,14 @@ class Router extends BaseRouter
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
 
+        $catalogDefaultSortBy = $this->scopeConfig->getValue(
+            self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeId
+        );
+
+        $action->setCatalogDefaultSortBy($catalogDefaultSortBy);
+
         if ($rewrite) {
             // Do not execute any action for external rewrites,
             // allow passing to default UrlRewrite router to make the work done
@@ -174,6 +226,7 @@ class Router extends BaseRouter
             // Otherwise properly hint response for correct FE app placeholders
             $action->setType($this->getDefaultActionType($rewrite));
             $action->setCode(200)->setPhrase('OK');
+            $this->setPageDetails($rewrite, $action);
         } elseif ($this->validationManager->validate($request)) { // Validate custom PWA routing
             $action->setType('PWA_ROUTER');
             $action->setCode(200)->setPhrase('OK');
@@ -182,7 +235,120 @@ class Router extends BaseRouter
             $action->setCode(404)->setPhrase('Not Found');
         }
 
+        if ($this->isHomePage($request)) {
+            $this->setResponseHomePage($action);
+        }
+
         return $action;
+    }
+
+    /**
+     * Update response
+     *
+     * @param UrlRewrite $urlRewrite
+     * @param ActionInterface $action
+     *
+     * @return void
+     */
+    protected function setPageDetails(UrlRewrite $urlRewrite, ActionInterface $action)
+    {
+        $actionType = $this->getDefaultActionType($urlRewrite);
+        $entityId = $urlRewrite->getEntityId();
+
+        switch ($actionType) {
+            case self::PAGE_TYPE_CMS_PAGE:
+                $this->setResponseCmsPage($entityId, $action);
+                break;
+            case self::PAGE_TYPE_PRODUCT:
+                $this->setResponseProduct($entityId, $action);
+                break;
+            case self::PAGE_TYPE_CATEGORY:
+                $this->setResponseCategory($entityId, $action);
+                break;
+        }
+    }
+
+    protected function setResponseHomePage(ActionInterface $action)
+    {
+        $homePageIdentifier = $this->scopeConfig->getValue(
+            self::XML_PATH_CMS_HOME_PAGE,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeId
+        );
+
+        $action->setIdentifier($homePageIdentifier ?? '');
+    }
+
+    /**
+     * Validate that CMS page is assigned to current store and is enabled and return 404 if not
+     *
+     * @param int|string $id
+     * @param ActionInterface $action
+     *
+     * @return void
+     */
+    protected function setResponseCmsPage($id, ActionInterface $action)
+    {
+        $page = $this->pageFactory->create()
+            ->setStoreId($this->storeId)
+            ->load($id);
+
+        $action->setId($page->getId() ?? '');
+        $action->setIdentifier($page->getIdentifier() ?? '');
+    }
+
+    /**
+     * Validate that product is enabled on current store and return 404 if not
+     *
+     * @param int|string $id
+     * @param ActionInterface $action
+     *
+     * @return void
+     */
+    protected function setResponseProduct($id, ActionInterface $action)
+    {
+        try {
+            $product = $this->productRepository->getById($id, false, $this->storeId);
+
+            $action->setId($product->getId() ?? '');
+            $action->setSku($product->getSku() ?? '');
+            $action->setName($product->getName() ?? '');
+        } catch (NoSuchEntityException $e) {
+            $this->setNotFound($action);
+        }
+    }
+
+    /**
+     * Validate that category is enabled on current store and return 404 if not
+     *
+     * @param int|string $id
+     * @param ActionInterface $action
+     *
+     * @return void
+     */
+    protected function setResponseCategory($id, ActionInterface $action)
+    {
+        try {
+            $category = $this->categoryRepository->get($id, $this->storeId);
+
+            $action->setId($category->getId() ?? '');
+            $action->setName($category->getName() ?? '');
+            $action->setDescription($category->getDescription() ?? '');
+        } catch (NoSuchEntityException $e) {
+            $this->setNotFound($action);
+        }
+    }
+
+    /**
+     * Set "404 Not Found" response
+     *
+     * @param ActionInterface $action
+     *
+     * @return void
+     */
+    protected function setNotFound(ActionInterface $action)
+    {
+        $action->setCode(404)->setPhrase('Not Found');
     }
 
     /**
@@ -203,11 +369,10 @@ class Router extends BaseRouter
      */
     protected function resolveRewrite(string $requestPath)
     {
-        $storeId = $this->storeManager->getStore()->getId();
 
         return $this->urlFinder->findOneByData([
             UrlRewrite::REQUEST_PATH => ltrim($requestPath, '/'),
-            UrlRewrite::STORE_ID => $storeId
+            UrlRewrite::STORE_ID => $this->storeId
         ]);
     }
 
@@ -291,6 +456,30 @@ class Router extends BaseRouter
             if (preg_match('|' . $pattern . '|', $requestPath)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    protected function isHomePage(RequestInterface $request): bool
+    {
+        $requestPath = $request->getPathInfo();
+
+        if(!$requestPath) {
+            return true;
+        }
+
+        $storeCode = $this->storeManager->getStore()->getCode();
+
+        if (substr($requestPath, 0, 1) === '/' && $requestPath !== '/') {
+            $requestPath = ltrim($requestPath, '/');
+        }
+
+        $routes = explode('/', $requestPath);
+        [$code] = $routes;
+
+        if(count($routes) == 1 && $code == $storeCode) {
+            return true;
         }
 
         return false;

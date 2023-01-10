@@ -91,6 +91,37 @@ class Page extends ExtendedPage
      * @var array;
      */
     private $rootTemplatePool;
+
+    /**
+     * @var string
+     */
+    protected $id;
+
+    /**
+     * @var string
+     */
+    protected $sku;
+
+    /**
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * @var string
+     */
+    protected $identifier;
+
+    /**
+     * @var string
+     */
+    protected $description;
+
+    /**
+     * @var string
+     */
+    protected $catalogDefaultSortBy;
+
     /**
      * Constructor
      *
@@ -140,6 +171,12 @@ class Page extends ExtendedPage
         );
         $this->action = $action;
         $this->rootTemplatePool = $rootTemplatePool;
+        $this->id = '';
+        $this->sku = '';
+        $this->name = '';
+        $this->identifier = '';
+        $this->description = '';
+        $this->catalogDefaultSortBy = '';
     }
 
     /**
@@ -167,7 +204,97 @@ class Page extends ExtendedPage
     {
         return $this->action;
     }
-    
+
+    public function setId(string $id)
+    {
+        if($this->id === '') {
+            $this->id = $id;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function setSku(string $sku)
+    {
+        if($this->sku === '') {
+            $this->sku = $sku;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getSku()
+    {
+        return $this->sku;
+    }
+
+    public function setName(string $name)
+    {
+        if($this->name === '') {
+            $this->name = $name;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public function setIdentifier(string $identifier)
+    {
+        if($this->identifier === '') {
+            $this->identifier = $identifier;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getIdentifier()
+    {
+        return $this->identifier;
+    }
+
+    public function setDescription(string $description)
+    {
+        if($this->description === '') {
+            $this->description = $description;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    public function setCatalogDefaultSortBy(string $catalogDefaultSortBy)
+    {
+        if($this->catalogDefaultSortBy === '') {
+            $this->catalogDefaultSortBy = $catalogDefaultSortBy;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getCatalogDefaultSortBy()
+    {
+        return $this->catalogDefaultSortBy;
+    }
+
     /**
      * @param string $template
      * @return Page

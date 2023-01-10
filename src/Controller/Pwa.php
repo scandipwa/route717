@@ -9,7 +9,6 @@
 
 namespace ScandiPWA\Router\Controller;
 
-
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
@@ -19,29 +18,58 @@ use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Framework\App\Action\Action;
 
-
 class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterface
 {
     /**
      * @var PageFactory $resultPageFactory
      */
     protected $resultPageFactory;
-    
+
     /**
      * @var string
      */
     protected $type;
-    
+
     /**
      * @var int
      */
     protected $code;
-    
+
     /**
      * @var string
      */
     protected $phrase;
-    
+
+    /**
+     * @var string
+     */
+    protected $id;
+
+    /**
+     * @var string
+     */
+    protected $sku;
+
+    /**
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * @var string
+     */
+    protected $identifier;
+
+    /**
+     * @var string
+     */
+    protected $description;
+
+    /**
+     * @var string
+     */
+    protected $catalogDefaultSortBy;
+
     /**
      * @param string $type
      * @return $this
@@ -51,7 +79,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->type = $type;
         return $this;
     }
-    
+
     /**
      * @param int $code
      * @return Pwa
@@ -61,7 +89,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->code = $code;
         return $this;
     }
-    
+
     /**
      * @param string $phrase
      * @return Pwa
@@ -71,7 +99,68 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->phrase = $phrase;
         return $this;
     }
-    
+
+    /**
+     * @param string $id
+     * @return Pwa
+     */
+    public function setId(string $id): self
+    {
+        $this->id = $id;
+        return $this;
+    }
+
+    /**
+     * @param string $sku
+     * @return Pwa
+     */
+    public function setSku(string $sku): self
+    {
+        $this->sku = $sku;
+        return $this;
+    }
+
+
+    /**
+     * @param string $name
+     * @return Pwa
+     */
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
+
+    /**
+     * @param string $identifier
+     * @return Pwa
+     */
+    public function setIdentifier(string $identifier): self
+    {
+        $this->identifier = $identifier;
+        return $this;
+    }
+
+    /**
+     * @param string $description
+     * @return Pwa
+     */
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    /**
+     * @param string $catalogDefaultSortBy
+     * @return Pwa
+     */
+    public function setCatalogDefaultSortBy(string $catalogDefaultSortBy): self
+    {
+        $this->catalogDefaultSortBy = $catalogDefaultSortBy;
+        return $this;
+    }
+
     /**
      * Rewrite constructor.
      * @param Context     $context
@@ -84,9 +173,15 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->type = 'PWA_ROUTER';
+        $this->id = '';
+        $this->sku = '';
+        $this->name = '';
+        $this->identifier = '';
+        $this->description = '';
+        $this->catalogDefaultSortBy = '';
         parent::__construct($context);
     }
-    
+
     /**
      * @return ResponseInterface|ResultInterface|Page
      * @throws \Exception
@@ -98,6 +193,12 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setStatusHeader($this->code, '1.1', $this->phrase);
         $resultLayout->setHeader('X-Status', $this->phrase);
         $resultLayout->setAction($this->type);
+        $resultLayout->setId($this->id);
+        $resultLayout->setSku($this->sku);
+        $resultLayout->setName($this->name);
+        $resultLayout->setIdentifier($this->identifier);
+        $resultLayout->setDescription($this->description);
+        $resultLayout->setCatalogDefaultSortBy($this->catalogDefaultSortBy);
         try{
             $templateName = 'pwa-root';
             $resultLayout->setRootTemplate($templateName);
@@ -107,7 +208,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
 
         return $resultLayout;
     }
-    
+
     protected function validate()
     {
         if (!$this->code || !$this->phrase || !$this->type) {
