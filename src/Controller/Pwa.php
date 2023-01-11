@@ -58,6 +58,11 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     /**
      * @var string
      */
+    protected $display_mode;
+
+    /**
+     * @var string
+     */
     protected $identifier;
 
     /**
@@ -132,6 +137,16 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     }
 
     /**
+     * @param string $display_mode
+     * @return Pwa
+     */
+    public function setDisplayMode(string $display_mode): self
+    {
+        $this->display_mode = $display_mode;
+        return $this;
+    }
+
+    /**
      * @param string $identifier
      * @return Pwa
      */
@@ -176,6 +191,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->id = '';
         $this->sku = '';
         $this->name = '';
+        $this->display_mode = '';
         $this->identifier = '';
         $this->description = '';
         $this->catalogDefaultSortBy = '';
@@ -197,6 +213,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setSku($this->sku);
         $resultLayout->setName($this->name);
         $resultLayout->setIdentifier($this->identifier);
+        $resultLayout->setDisplayMode($this->display_mode);
         $resultLayout->setDescription($this->description);
         $resultLayout->setCatalogDefaultSortBy($this->catalogDefaultSortBy);
         try{

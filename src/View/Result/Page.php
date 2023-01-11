@@ -110,6 +110,11 @@ class Page extends ExtendedPage
     /**
      * @var string
      */
+    protected $display_mode;
+
+    /**
+     * @var string
+     */
     protected $identifier;
 
     /**
@@ -174,6 +179,7 @@ class Page extends ExtendedPage
         $this->id = '';
         $this->sku = '';
         $this->name = '';
+        $this->display_mode = '';
         $this->identifier = '';
         $this->description = '';
         $this->catalogDefaultSortBy = '';
@@ -248,6 +254,21 @@ class Page extends ExtendedPage
     public function getName()
     {
         return $this->name;
+    }
+
+    public function setDisplayMode(string $display_mode)
+    {
+        if($this->display_mode === '') {
+            $this->display_mode = $display_mode;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getDisplayMode()
+    {
+        return $this->display_mode;
     }
 
     public function setIdentifier(string $identifier)
