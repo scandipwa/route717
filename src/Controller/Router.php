@@ -33,7 +33,7 @@ use Magento\Framework\View\Design\Theme\ThemeProviderInterface;
 use Magento\Cms\Model\PageFactory;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
-
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
 class Router extends BaseRouter
 {
     const XML_PATH_CMS_HOME_PAGE = 'web/default/cms_home_page';
@@ -294,6 +294,11 @@ class Router extends BaseRouter
             ->setStoreId($this->storeId)
             ->load($id);
 
+        if (!$page->getId() || !$page->isActive()) {
+            $this->setNotFound($action);
+            return;
+        }
+
         $action->setId($page->getId() ?? '');
         $action->setIdentifier($page->getIdentifier() ?? '');
     }
@@ -310,6 +315,11 @@ class Router extends BaseRouter
     {
         try {
             $product = $this->productRepository->getById($id, false, $this->storeId);
+
+            if (!$product->getId() || $product->getStatus() != Status::STATUS_ENABLED) {
+                $this->setNotFound($action);
+                return;
+            }
 
             $action->setId($product->getId() ?? '');
             $action->setSku($product->getSku() ?? '');
@@ -331,6 +341,11 @@ class Router extends BaseRouter
     {
         try {
             $category = $this->categoryRepository->get($id, $this->storeId);
+
+            if (!$category->getIsActive()) {
+                $this->setNotFound($action);
+                return;
+            }
 
             $action->setId($category->getId() ?? '');
             $action->setName($category->getName() ?? '');
