@@ -349,6 +349,7 @@ class Router extends BaseRouter
 
             $action->setId($category->getId() ?? '');
             $action->setName($category->getName() ?? '');
+            $action->setDisplayMode($category->getDisplayMode() ?? '');
             $action->setDescription($category->getDescription() ?? '');
         } catch (NoSuchEntityException $e) {
             $this->setNotFound($action);
