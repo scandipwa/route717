@@ -127,6 +127,11 @@ class Page extends ExtendedPage
      */
     protected $catalogDefaultSortBy;
 
+     /**
+     * @var string
+     */
+    protected $catalogDefaultSortByConfig;
+
     /**
      * Constructor
      *
@@ -183,6 +188,7 @@ class Page extends ExtendedPage
         $this->identifier = '';
         $this->description = '';
         $this->catalogDefaultSortBy = '';
+        $this->catalogDefaultSortByConfig = '';
     }
 
     /**
@@ -314,6 +320,21 @@ class Page extends ExtendedPage
     public function getCatalogDefaultSortBy()
     {
         return $this->catalogDefaultSortBy;
+    }
+
+    public function setCatalogDefaultSortByConfig(string $catalogDefaultSortByConfig)
+    {
+        if($this->catalogDefaultSortByConfig === '') {
+            $this->catalogDefaultSortByConfig = $catalogDefaultSortByConfig;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getCatalogDefaultSortByConfig()
+    {
+        return $this->catalogDefaultSortByConfig;
     }
 
     /**

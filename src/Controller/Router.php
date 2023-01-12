@@ -208,13 +208,13 @@ class Router extends BaseRouter
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
 
-        $catalogDefaultSortBy = $this->scopeConfig->getValue(
+        $catalogDefaultSortByConfig = $this->scopeConfig->getValue(
             self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
             ScopeInterface::SCOPE_STORE,
             $this->storeId
         );
 
-        $action->setCatalogDefaultSortBy($catalogDefaultSortBy);
+        $action->setCatalogDefaultSortByConfig($catalogDefaultSortByConfig);
 
         if ($rewrite) {
             // Do not execute any action for external rewrites,
@@ -351,6 +351,7 @@ class Router extends BaseRouter
             $action->setName($category->getName() ?? '');
             $action->setDisplayMode($category->getDisplayMode() ?? '');
             $action->setDescription($category->getDescription() ?? '');
+            $action->setCatalogDefaultSortBy($category->getCatalogDefaultSortBy() ?? '');
         } catch (NoSuchEntityException $e) {
             $this->setNotFound($action);
         }
