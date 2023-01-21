@@ -235,7 +235,7 @@ class Router extends BaseRouter
             $action->setCode(404)->setPhrase('Not Found');
         }
 
-        if ($this->isHomePage($request)) {
+        if ($this->isHomePage($request, $action)) {
             $this->setResponseHomePage($action);
         }
 
@@ -483,7 +483,7 @@ class Router extends BaseRouter
     {
         $requestPath = $request->getPathInfo();
 
-        if(!$requestPath) {
+        if(!$requestPath || $requestPath === '/') {
             return true;
         }
 
