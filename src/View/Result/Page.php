@@ -127,10 +127,10 @@ class Page extends ExtendedPage
      */
     protected $catalogDefaultSortBy;
 
-     /**
-     * @var string
+    /**
+     * @var array|null
      */
-    protected $catalogDefaultSortByConfig;
+    protected $storeConfig;
 
     /**
      * Constructor
@@ -188,7 +188,7 @@ class Page extends ExtendedPage
         $this->identifier = '';
         $this->description = '';
         $this->catalogDefaultSortBy = '';
-        $this->catalogDefaultSortByConfig = '';
+        $this->storeConfig = null;
     }
 
     /**
@@ -322,19 +322,19 @@ class Page extends ExtendedPage
         return $this->catalogDefaultSortBy;
     }
 
-    public function setCatalogDefaultSortByConfig(string $catalogDefaultSortByConfig)
+    public function setStoreConfig($storeConfig)
     {
-        if($this->catalogDefaultSortByConfig === '') {
-            $this->catalogDefaultSortByConfig = $catalogDefaultSortByConfig;
+        if($this->storeConfig === null) {
+            $this->storeConfig = $storeConfig;
             return $this;
         }
 
-        return '';
+        return null;
     }
 
     public function getCatalogDefaultSortByConfig()
     {
-        return $this->catalogDefaultSortByConfig;
+        return $this->storeConfig;
     }
 
     /**
