@@ -61,9 +61,9 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     protected $display_mode;
 
     /**
-     * @var string
+     * @var array|null
      */
-    protected $identifier;
+    protected $cmsPage;
 
     /**
      * @var string
@@ -147,12 +147,12 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     }
 
     /**
-     * @param string $identifier
+     * @param $cmsPage
      * @return Pwa
      */
-    public function setIdentifier(string $identifier): self
+    public function setCmsPage($cmsPage): self
     {
-        $this->identifier = $identifier;
+        $this->cmsPage = $cmsPage;
         return $this;
     }
 
@@ -192,7 +192,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->sku = '';
         $this->name = '';
         $this->display_mode = '';
-        $this->identifier = '';
+        $this->cmsPage = null;
         $this->description = '';
         $this->catalogDefaultSortBy = '';
         parent::__construct($context);
@@ -212,7 +212,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setId($this->id);
         $resultLayout->setSku($this->sku);
         $resultLayout->setName($this->name);
-        $resultLayout->setIdentifier($this->identifier);
+        $resultLayout->setCmsPage($this->cmsPage);
         $resultLayout->setDisplayMode($this->display_mode);
         $resultLayout->setDescription($this->description);
         $resultLayout->setCatalogDefaultSortBy($this->catalogDefaultSortBy);

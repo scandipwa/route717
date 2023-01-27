@@ -113,9 +113,9 @@ class Page extends ExtendedPage
     protected $display_mode;
 
     /**
-     * @var string
+     * @var array|null
      */
-    protected $identifier;
+    protected $cmsPage;
 
     /**
      * @var string
@@ -180,7 +180,7 @@ class Page extends ExtendedPage
         $this->sku = '';
         $this->name = '';
         $this->display_mode = '';
-        $this->identifier = '';
+        $this->cmsPage = null;
         $this->description = '';
         $this->catalogDefaultSortBy = '';
     }
@@ -271,19 +271,19 @@ class Page extends ExtendedPage
         return $this->display_mode;
     }
 
-    public function setIdentifier(string $identifier)
+    public function setCmsPage($cmsPage)
     {
-        if($this->identifier === '') {
-            $this->identifier = $identifier;
+        if($this->cmsPage === null) {
+            $this->cmsPage = $cmsPage;
             return $this;
         }
 
-        return '';
+        return null;
     }
 
-    public function getIdentifier()
+    public function getCmsPage()
     {
-        return $this->identifier;
+        return $this->cmsPage;
     }
 
     public function setDescription(string $description)
@@ -330,5 +330,4 @@ class Page extends ExtendedPage
         }
         return $this;
     }
-
 }
