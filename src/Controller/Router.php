@@ -34,6 +34,7 @@ use Magento\Cms\Model\PageFactory;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use ScandiPWA\CmsGraphQl\Model\Resolver\DataProvider\Page as PageProvider;
 
 class Router extends BaseRouter
 {
@@ -106,6 +107,11 @@ class Router extends BaseRouter
     protected $productRepository;
 
     /**
+     * @var PageProvider
+     */
+    protected PageProvider $pageProvider;
+
+    /**
      * Router constructor.
      * @param ActionList                 $actionList
      * @param ActionFactory              $actionFactory
@@ -123,6 +129,7 @@ class Router extends BaseRouter
      * @param PageFactory $pageFactory
      * @param ProductRepository $productRepository
      * @param CategoryRepositoryInterface $categoryRepository
+     * @param PageProvider $pageProvider
      */
     public function __construct(
         ActionList $actionList,
@@ -141,6 +148,7 @@ class Router extends BaseRouter
         PageFactory $pageFactory,
         ProductRepository $productRepository,
         CategoryRepositoryInterface $categoryRepository,
+        PageProvider $pageProvider,
         array $ignoredURLs = []
     ) {
         $this->scopeConfig = $scopeConfig;
@@ -151,6 +159,7 @@ class Router extends BaseRouter
         $this->pageFactory = $pageFactory;
         $this->productRepository = $productRepository;
         $this->categoryRepository = $categoryRepository;
+        $this->pageProvider = $pageProvider;
         $this->ignoredURLs = $ignoredURLs;
         $this->storeId = $this->storeManager->getStore()->getId();
 
@@ -277,8 +286,15 @@ class Router extends BaseRouter
             $this->storeId
         );
 
-        $action->setType(self::PAGE_TYPE_CMS_PAGE);
-        $action->setIdentifier($homePageIdentifier ?? '');
+        try {
+            $page = $this->pageProvider->getDataByPageIdentifier($homePageIdentifier, (int) $this->storeId);
+
+            $action->setType(self::PAGE_TYPE_CMS_PAGE);
+            $action->setId($page['page_id'] ?? '');
+            $action->setCmsPage($page);
+        } catch (\Throwable $th) {
+            $action->setType('PWA_ROUTER');
+        }
     }
 
     /**
@@ -291,17 +307,14 @@ class Router extends BaseRouter
      */
     protected function setResponseCmsPage($id, ActionInterface $action)
     {
-        $page = $this->pageFactory->create()
-            ->setStoreId($this->storeId)
-            ->load($id);
+        try {
+            $page = $this->pageProvider->getDataByPageId((int) $id, (int) $this->storeId);
 
-        if (!$page->getId() || !$page->isActive()) {
+            $action->setId($page['page_id'] ?? '');
+            $action->setCmsPage($page);
+        } catch (\Throwable $th) {
             $this->setNotFound($action);
-            return;
         }
-
-        $action->setId($page->getId() ?? '');
-        $action->setIdentifier($page->getIdentifier() ?? '');
     }
 
     /**
