@@ -46,6 +46,11 @@ class Router extends BaseRouter
     const PAGE_TYPE_CATEGORY = 'CATEGORY';
     const PAGE_TYPE_CMS_PAGE = 'CMS_PAGE';
 
+    const CRUCIAL_STORE_CONFIG_VALUES = [
+        'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
+        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY
+    ];
+
     /**
      * @var ValidationManagerInterface
      */
@@ -218,13 +223,6 @@ class Router extends BaseRouter
         $action = $this->actionFactory->create(Pwa::class);
         $rewrite = $this->getRewrite($request);
 
-        $catalogDefaultSortBy = $this->scopeConfig->getValue(
-            self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
-            ScopeInterface::SCOPE_STORE,
-            $this->storeId
-        );
-
-        $action->setCatalogDefaultSortBy($catalogDefaultSortBy);
 
         if ($rewrite) {
             // Do not execute any action for external rewrites,
@@ -245,7 +243,7 @@ class Router extends BaseRouter
             $action->setCode(404)->setPhrase('Not Found');
         }
 
-        if ($this->isHomePage($request)) {
+        if ($this->isHomePage($request, $action)) {
             $this->setResponseHomePage($action);
         }
 
@@ -276,6 +274,8 @@ class Router extends BaseRouter
                 $this->setResponseCategory($entityId, $action);
                 break;
         }
+
+        $this->setStoreConfigs($action);
     }
 
     protected function setResponseHomePage(ActionInterface $action)
@@ -365,9 +365,28 @@ class Router extends BaseRouter
             $action->setName($category->getName() ?? '');
             $action->setDisplayMode($category->getDisplayMode() ?? '');
             $action->setDescription($category->getDescription() ?? '');
+            $action->setCatalogDefaultSortBy($category->getCatalogDefaultSortBy() ?? '');
         } catch (NoSuchEntityException $e) {
             $this->setNotFound($action);
         }
+    }
+
+    protected function setStoreConfigs(ActionInterface $action)
+    {
+        $storeConfig = [];
+        $crucialStoreConfigs = self::CRUCIAL_STORE_CONFIG_VALUES;
+
+        foreach ($crucialStoreConfigs as $configKey => $path) {
+            $configValue = $this->scopeConfig->getValue(
+                $path,
+                ScopeInterface::SCOPE_STORE,
+                $this->storeId
+            );
+
+            $storeConfig[$configKey] = $configValue;
+        }
+
+        $action->setStoreConfig($storeConfig);
     }
 
     /**
@@ -496,7 +515,7 @@ class Router extends BaseRouter
     {
         $requestPath = $request->getPathInfo();
 
-        if(!$requestPath) {
+        if(!$requestPath || $requestPath === '/') {
             return true;
         }
 

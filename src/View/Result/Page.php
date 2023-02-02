@@ -128,6 +128,11 @@ class Page extends ExtendedPage
     protected $catalogDefaultSortBy;
 
     /**
+     * @var array|null
+     */
+    protected $storeConfig;
+
+    /**
      * Constructor
      *
      * @param View\Element\Template\Context $context
@@ -183,6 +188,7 @@ class Page extends ExtendedPage
         $this->cmsPage = null;
         $this->description = '';
         $this->catalogDefaultSortBy = '';
+        $this->storeConfig = null;
     }
 
     /**
@@ -314,6 +320,21 @@ class Page extends ExtendedPage
     public function getCatalogDefaultSortBy()
     {
         return $this->catalogDefaultSortBy;
+    }
+
+    public function setStoreConfig($storeConfig)
+    {
+        if($this->storeConfig === null) {
+            $this->storeConfig = $storeConfig;
+            return $this;
+        }
+
+        return null;
+    }
+
+    public function getCatalogDefaultSortByConfig()
+    {
+        return $this->storeConfig;
     }
 
     /**
