@@ -186,6 +186,7 @@ class Page extends ExtendedPage
         $this->name = '';
         $this->display_mode = '';
         $this->cmsPage = null;
+        $this->slider = null;
         $this->description = '';
         $this->catalogDefaultSortBy = '';
         $this->storeConfig = null;
@@ -324,12 +325,32 @@ class Page extends ExtendedPage
 
     public function setStoreConfig($storeConfig)
     {
-        if($this->storeConfig === null) {
+        if ($this->storeConfig === null) {
             $this->storeConfig = $storeConfig;
             return $this;
         }
 
         return null;
+    }
+
+    public function getStoreConfig()
+    {
+        return $this->storeConfig;
+    }
+
+    public function setSlider($slider)
+    {
+        if ($this->slider === null) {
+            $this->slider = $slider;
+            return $this;
+        }
+
+        return '';
+    }
+
+    public function getSlider()
+    {
+        return $this->slider;
     }
 
     public function getCatalogDefaultSortByConfig()
