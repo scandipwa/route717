@@ -161,6 +161,12 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         return $this;
     }
 
+    public function setSlider($slider): self
+    {
+        $this->slider = $slider;
+        return $this;
+    }
+
     /**
      * @param string $description
      * @return Pwa
@@ -208,6 +214,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->name = '';
         $this->display_mode = '';
         $this->cmsPage = null;
+        $this->slider = null;
         $this->description = '';
         $this->catalogDefaultSortBy = '';
         $this->storeConfig = null;
@@ -229,6 +236,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setSku($this->sku);
         $resultLayout->setName($this->name);
         $resultLayout->setCmsPage($this->cmsPage);
+        $resultLayout->setSlider($this->slider);
         $resultLayout->setDisplayMode($this->display_mode);
         $resultLayout->setDescription($this->description);
         $resultLayout->setCatalogDefaultSortBy($this->catalogDefaultSortBy);

@@ -34,7 +34,12 @@ use Magento\Cms\Model\PageFactory;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\Cms\Api\PageRepositoryInterface;
 use ScandiPWA\CmsGraphQl\Model\Resolver\DataProvider\Page as PageProvider;
+use Magento\Cms\Api\GetPageByIdentifierInterface;
+use Magento\Framework\Filter\Template as WidgetTemplate;
+use Magento\Framework\Filter\Template\Tokenizer\Parameter as TokenizerParameter;
+use ScandiPWA\SliderGraphQl\Model\Resolver\Slider as SliderResolver;
 
 class Router extends BaseRouter
 {
@@ -112,45 +117,75 @@ class Router extends BaseRouter
     protected PageProvider $pageProvider;
 
     /**
+     * @var PageRepositoryInterface
+     */
+    protected $pageRepository;
+
+    /**
+     * @var GetPageByIdentifierInterface
+     */
+    protected $pageByIdentifier;
+
+    /**
+     * @var TokenizerParameter
+     */
+    protected $tokenizerParameter;
+
+    /**
+     * @var SliderResolver
+     */
+    protected $sliderResolver;
+
+    /**
+     * @var WidgetTemplate
+     */
+    protected $widgetTemplate;
+
+    /**
      * Router constructor.
-     * @param ActionList                 $actionList
-     * @param ActionFactory              $actionFactory
-     * @param DefaultPathInterface       $defaultPath
-     * @param ResponseFactory            $responseFactory
-     * @param ConfigInterface            $routeConfig
-     * @param UrlInterface               $url
-     * @param NameBuilder                $nameBuilder
-     * @param PathConfigInterface        $pathConfig
+     * @param ActionList $actionList
+     * @param ActionFactory $actionFactory
+     * @param DefaultPathInterface $defaultPath
+     * @param ResponseFactory $responseFactory
+     * @param ConfigInterface $routeConfig
+     * @param UrlInterface $url
+     * @param NameBuilder $nameBuilder
+     * @param PathConfigInterface $pathConfig
      * @param ValidationManagerInterface $validationManager
-     * @param UrlFinderInterface         $urlFinder
-     * @param StoreManagerInterface      $storeManager
-     * @param ScopeConfigInterface       $scopeConfig
-     * @param ThemeProviderInterface     $themeProvider
+     * @param UrlFinderInterface $urlFinder
+     * @param StoreManagerInterface $storeManager
+     * @param ScopeConfigInterface $scopeConfig
+     * @param ThemeProviderInterface $themeProvider
      * @param PageFactory $pageFactory
      * @param ProductRepository $productRepository
      * @param CategoryRepositoryInterface $categoryRepository
      * @param PageProvider $pageProvider
      */
     public function __construct(
-        ActionList $actionList,
-        ActionFactory $actionFactory,
-        DefaultPathInterface $defaultPath,
-        ResponseFactory $responseFactory,
-        ConfigInterface $routeConfig,
-        UrlInterface $url,
-        NameBuilder $nameBuilder,
-        PathConfigInterface $pathConfig,
-        ValidationManagerInterface $validationManager,
-        UrlFinderInterface $urlFinder,
-        StoreManagerInterface $storeManager,
-        ScopeConfigInterface $scopeConfig,
-        ThemeProviderInterface $themeProvider,
-        PageFactory $pageFactory,
-        ProductRepository $productRepository,
-        CategoryRepositoryInterface $categoryRepository,
-        PageProvider $pageProvider,
-        array $ignoredURLs = []
-    ) {
+        ActionList                   $actionList,
+        ActionFactory                $actionFactory,
+        DefaultPathInterface         $defaultPath,
+        ResponseFactory              $responseFactory,
+        ConfigInterface              $routeConfig,
+        UrlInterface                 $url,
+        NameBuilder                  $nameBuilder,
+        PathConfigInterface          $pathConfig,
+        ValidationManagerInterface   $validationManager,
+        UrlFinderInterface           $urlFinder,
+        StoreManagerInterface        $storeManager,
+        ScopeConfigInterface         $scopeConfig,
+        ThemeProviderInterface       $themeProvider,
+        PageFactory                  $pageFactory,
+        ProductRepository            $productRepository,
+        CategoryRepositoryInterface  $categoryRepository,
+        PageProvider                 $pageProvider,
+        PageRepositoryInterface      $pageRepository,
+        GetPageByIdentifierInterface $pageByIdentifier,
+        TokenizerParameter           $tokenizerParameter,
+        SliderResolver               $sliderResolver,
+        array                        $ignoredURLs = [],
+    )
+    {
         $this->scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
@@ -159,9 +194,13 @@ class Router extends BaseRouter
         $this->pageFactory = $pageFactory;
         $this->productRepository = $productRepository;
         $this->categoryRepository = $categoryRepository;
+        $this->pageRepository = $pageRepository;
+        $this->pageByIdentifier = $pageByIdentifier;
         $this->pageProvider = $pageProvider;
         $this->ignoredURLs = $ignoredURLs;
         $this->storeId = $this->storeManager->getStore()->getId();
+        $this->tokenizerParameter = $tokenizerParameter;
+        $this->sliderResolver = $sliderResolver;
 
         parent::__construct(
             $actionList,
@@ -243,7 +282,7 @@ class Router extends BaseRouter
             $action->setCode(404)->setPhrase('Not Found');
         }
 
-        if ($this->isHomePage($request, $action)) {
+        if ($this->isHomePage($request)) {
             $this->setResponseHomePage($action);
         }
 
@@ -287,13 +326,40 @@ class Router extends BaseRouter
         );
 
         try {
-            $page = $this->pageProvider->getDataByPageIdentifier($homePageIdentifier, (int) $this->storeId);
+            $page = $this->pageByIdentifier->execute($homePageIdentifier, (int)$this->storeId);
+
+            $action->setId($page['page_id'] ?? '');
 
             $action->setType(self::PAGE_TYPE_CMS_PAGE);
             $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($page);
+            $action->setCmsPage($this->pageProvider->convertPageData($page));
+            $action->setSlider($this->getSliderInformation($page['content']));
         } catch (\Throwable $th) {
             $action->setType('PWA_ROUTER');
+        }
+    }
+
+    /**
+     * @param string $content
+     *
+     * This function gets first widget from page content
+     * In case if it is slider, then it gets slider it.
+     */
+    protected function getSliderInformation($content)
+    {
+        preg_match('/{{(.*?)}}/m', $content, $match);
+
+        $this->tokenizerParameter->setString($match[0]);
+        $params = $this->tokenizerParameter->tokenize();
+
+        foreach ($params as $key => $value) {
+            if (substr($value, 0, 1) === '$') {
+                $params[$key] = $this->widgetTemplate->getVariable(substr($value, 1), null);
+            }
+        }
+
+        if (isset($params['slider_id'])) {
+            return $this->sliderResolver->getSlider($params['slider_id']);
         }
     }
 
@@ -308,10 +374,10 @@ class Router extends BaseRouter
     protected function setResponseCmsPage($id, ActionInterface $action)
     {
         try {
-            $page = $this->pageProvider->getDataByPageId((int) $id, (int) $this->storeId);
-
+            $page = $this->pageRepository->getById($id);
             $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($page);
+            $action->setCmsPage($this->pageProvider->convertPageData($page));
+            $action->setSlider($this->getSliderInformation($page['content']));
         } catch (\Throwable $th) {
             $this->setNotFound($action);
         }
