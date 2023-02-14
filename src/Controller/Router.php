@@ -40,7 +40,7 @@ use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use ScandiPWA\CmsGraphQl\Model\Resolver\DataProvider\Page as PageProvider;
-use Magento\Framework\Filter\Template as WidgetTemplate;
+use Magento\Cms\Api\GetPageByIdentifierInterface;
 use Magento\Framework\Filter\Template\Tokenizer\Parameter as TokenizerParameter;
 use ScandiPWA\SliderGraphQl\Model\Resolver\Slider as SliderResolver;
 
@@ -128,11 +128,6 @@ class Router extends BaseRouter
      * @var SliderResolver
      */
     protected $sliderResolver;
-
-    /**
-     * @var WidgetTemplate
-     */
-    protected $widgetTemplate;
 
     /**
      * Router constructor.
@@ -339,12 +334,6 @@ class Router extends BaseRouter
 
         $this->tokenizerParameter->setString($match[0] ?? '');
         $params = $this->tokenizerParameter->tokenize();
-
-        foreach ($params as $key => $value) {
-            if (substr($value, 0, 1) === '$') {
-                $params[$key] = $this->widgetTemplate->getVariable(substr($value, 1), null);
-            }
-        }
 
         if (isset($params['slider_id'])) {
             return $this->sliderResolver->getSlider($params['slider_id']);
