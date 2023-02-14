@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -9,6 +10,9 @@
 
 namespace ScandiPWA\Router\Controller;
 
+use Magento\Framework\App\Area;
+use Magento\Framework\App\State;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -20,6 +24,7 @@ use Magento\Framework\App\Router\ActionList;
 use Magento\Framework\App\Router\PathConfigInterface;
 use Magento\Framework\App\Router\Base as BaseRouter;
 use Magento\Framework\Code\NameBuilder;
+use Magento\Framework\Interception\ConfigLoaderInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
@@ -34,9 +39,9 @@ use Magento\Cms\Model\PageFactory;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
-use Magento\Cms\Api\PageRepositoryInterface;
 use ScandiPWA\CmsGraphQl\Model\Resolver\DataProvider\Page as PageProvider;
 use Magento\Cms\Api\GetPageByIdentifierInterface;
+use Magento\Cms\Api\PageRepositoryInterface;
 use Magento\Framework\Filter\Template\Tokenizer\Parameter as TokenizerParameter;
 use ScandiPWA\SliderGraphQl\Model\Resolver\Slider as SliderResolver;
 
@@ -116,16 +121,6 @@ class Router extends BaseRouter
     protected PageProvider $pageProvider;
 
     /**
-     * @var PageRepositoryInterface
-     */
-    protected $pageRepository;
-
-    /**
-     * @var GetPageByIdentifierInterface
-     */
-    protected $pageByIdentifier;
-
-    /**
      * @var TokenizerParameter
      */
     protected $tokenizerParameter;
@@ -134,6 +129,16 @@ class Router extends BaseRouter
      * @var SliderResolver
      */
     protected $sliderResolver;
+
+    /**
+     * @var PageRepositoryInterface
+     */
+    protected $pageRepository;
+
+    /**
+     * @var GetPageByIdentifierInterface
+     */
+    protected $pageByIdentifier;
 
     /**
      * Router constructor.
@@ -154,6 +159,8 @@ class Router extends BaseRouter
      * @param ProductRepository $productRepository
      * @param CategoryRepositoryInterface $categoryRepository
      * @param PageProvider $pageProvider
+     * @param TokenizerParameter $tokenizerParameter
+     * @param SliderResolver $sliderResolver
      */
     public function __construct(
         ActionList                   $actionList,
@@ -173,11 +180,11 @@ class Router extends BaseRouter
         ProductRepository            $productRepository,
         CategoryRepositoryInterface  $categoryRepository,
         PageProvider                 $pageProvider,
-        PageRepositoryInterface      $pageRepository,
-        GetPageByIdentifierInterface $pageByIdentifier,
         TokenizerParameter           $tokenizerParameter,
         SliderResolver               $sliderResolver,
-        array $ignoredURLs = []
+        PageRepositoryInterface      $pageRepository,
+        GetPageByIdentifierInterface $getPageByIdentifier,
+        array                        $ignoredURLs = []
     )
     {
         $this->scopeConfig = $scopeConfig;
@@ -188,13 +195,13 @@ class Router extends BaseRouter
         $this->pageFactory = $pageFactory;
         $this->productRepository = $productRepository;
         $this->categoryRepository = $categoryRepository;
-        $this->pageRepository = $pageRepository;
-        $this->pageByIdentifier = $pageByIdentifier;
         $this->pageProvider = $pageProvider;
         $this->ignoredURLs = $ignoredURLs;
         $this->storeId = $this->storeManager->getStore()->getId();
         $this->tokenizerParameter = $tokenizerParameter;
         $this->sliderResolver = $sliderResolver;
+        $this->pageRepository = $pageRepository;
+        $this->pageByIdentifier = $getPageByIdentifier;
 
         parent::__construct(
             $actionList,
@@ -227,13 +234,13 @@ class Router extends BaseRouter
             $this->storeId
         );
 
-        if($expressions) {
+        if ($expressions) {
             $userAgentRules = json_decode($expressions, true);
 
             foreach ($userAgentRules as $userAgentRule) {
                 $regexp = stripslashes($userAgentRule['regexp']);
 
-                if(preg_match($regexp, $_SERVER['HTTP_USER_AGENT'])) {
+                if (preg_match($regexp, $_SERVER['HTTP_USER_AGENT'])) {
                     $themeId = $userAgentRule['value'];
                 }
             }
@@ -320,14 +327,17 @@ class Router extends BaseRouter
         );
 
         try {
-            $page = $this->pageByIdentifier->execute($homePageIdentifier, (int)$this->storeId);
+            $page = $this->getCmsPageFromGraphqlArea(null, $homePageIdentifier);
 
-            $action->setId($page['page_id'] ?? '');
+            if (!isset($page['cmsPage'])) {
+                $action->setType('PWA_ROUTER');
+                return;
+            }
 
             $action->setType(self::PAGE_TYPE_CMS_PAGE);
-            $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($this->pageProvider->convertPageData($page));
-            $action->setSlider($this->getSliderInformation($page['content']));
+            $action->setId($page['cmsPage']['page_id'] ?? '');
+            $action->setCmsPage($page['cmsPage']);
+            $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $action->setType('PWA_ROUTER');
         }
@@ -343,7 +353,7 @@ class Router extends BaseRouter
     {
         preg_match('/{{(.*?)}}/m', $content, $match);
 
-        $this->tokenizerParameter->setString($match[0]);
+        $this->tokenizerParameter->setString($match[0] ?? '');
         $params = $this->tokenizerParameter->tokenize();
 
         if (isset($params['slider_id'])) {
@@ -362,10 +372,11 @@ class Router extends BaseRouter
     protected function setResponseCmsPage($id, ActionInterface $action)
     {
         try {
-            $page = $this->pageRepository->getById($id);
+            $page = $this->getCmsPageFromGraphqlArea((int)$id);
+
             $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($this->pageProvider->convertPageData($page));
-            $action->setSlider($this->getSliderInformation($page['content']));
+            $action->setCmsPage($page);
+            $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $this->setNotFound($action);
         }
@@ -441,6 +452,39 @@ class Router extends BaseRouter
         }
 
         $action->setStoreConfig($storeConfig);
+    }
+
+    protected function getCmsPageFromGraphqlArea(int $id = null, string $identifier = null)
+    {
+        try {
+            // vvv construct PageProvider with grahql area
+            $objectManager = ObjectManager::getInstance();
+            $configLoader = $objectManager->get(ConfigLoaderInterface::class);
+            $currentConfigArea = $objectManager->get(State::class)->getAreaCode();
+            $objectManager->configure($configLoader->load(Area::AREA_GRAPHQL));
+
+            $pageProvider = $objectManager->create(PageProvider::class);
+            $page = null;
+            $result = [];
+
+            if ($id) {
+                $page = $this->pageRepository->getById($id);
+            }
+
+            if ($identifier) {
+                $page = $this->pageByIdentifier->execute($identifier, (int)$this->storeId);
+            }
+
+            $result['cmsPage'] = $pageProvider->convertPageData($page);
+            $result['content'] = $page->getContent();
+
+            // vvv reset config area back to initial
+            $objectManager->configure($configLoader->load($currentConfigArea));
+
+            return $result;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
@@ -569,7 +613,7 @@ class Router extends BaseRouter
     {
         $requestPath = $request->getPathInfo();
 
-        if(!$requestPath || $requestPath === '/') {
+        if (!$requestPath || $requestPath === '/') {
             return true;
         }
 
@@ -582,7 +626,7 @@ class Router extends BaseRouter
         $routes = array_filter(explode('/', $requestPath));
         $code = $routes[0] ?? '';
 
-        if(count($routes) == 1 && $code == $storeCode) {
+        if (count($routes) == 1 && $code == $storeCode) {
             return true;
         }
 
