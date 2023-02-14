@@ -347,11 +347,7 @@ class Router extends BaseRouter
         }
 
         if (isset($params['slider_id'])) {
-            return $this->appState->emulateAreaCode(
-                Area::AREA_GRAPHQL,
-                [$this->sliderResolver, 'getSlider'],
-                [$params['slider_id']]
-            );
+            return $this->sliderResolver->getSlider($params['slider_id']);
         }
     }
 
