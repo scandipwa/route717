@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -41,6 +40,7 @@ use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use ScandiPWA\CmsGraphQl\Model\Resolver\DataProvider\Page as PageProvider;
 use Magento\Cms\Api\GetPageByIdentifierInterface;
+use Magento\Cms\Api\PageRepositoryInterface;
 use Magento\Framework\Filter\Template\Tokenizer\Parameter as TokenizerParameter;
 use ScandiPWA\SliderGraphQl\Model\Resolver\Slider as SliderResolver;
 
@@ -130,6 +130,16 @@ class Router extends BaseRouter
     protected $sliderResolver;
 
     /**
+     * @var PageRepositoryInterface
+     */
+    protected $pageRepository;
+
+    /**
+     * @var GetPageByIdentifierInterface
+     */
+    protected $pageByIdentifier;
+
+    /**
      * Router constructor.
      * @param ActionList $actionList
      * @param ActionFactory $actionFactory
@@ -171,8 +181,11 @@ class Router extends BaseRouter
         PageProvider                 $pageProvider,
         TokenizerParameter           $tokenizerParameter,
         SliderResolver               $sliderResolver,
+        PageRepositoryInterface      $pageRepository,
+        GetPageByIdentifierInterface $getPageByIdentifier,
         array                        $ignoredURLs = []
-    ) {
+    )
+    {
         $this->scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
@@ -186,6 +199,8 @@ class Router extends BaseRouter
         $this->storeId = $this->storeManager->getStore()->getId();
         $this->tokenizerParameter = $tokenizerParameter;
         $this->sliderResolver = $sliderResolver;
+        $this->pageRepository = $pageRepository;
+        $this->pageByIdentifier = $getPageByIdentifier;
 
         parent::__construct(
             $actionList,
@@ -313,9 +328,14 @@ class Router extends BaseRouter
         try {
             $page = $this->getCmsPageFromGraphqlArea(null, $homePageIdentifier);
 
+            if (!isset($page['cmsPage'])) {
+                $action->setType('PWA_ROUTER');
+                return;
+            }
+
             $action->setType(self::PAGE_TYPE_CMS_PAGE);
-            $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($page);
+            $action->setId($page['cmsPage']['page_id'] ?? '');
+            $action->setCmsPage($page['cmsPage']);
             $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $action->setType('PWA_ROUTER');
@@ -351,10 +371,15 @@ class Router extends BaseRouter
     protected function setResponseCmsPage($id, ActionInterface $action)
     {
         try {
-            $page = $this->getCmsPageFromGraphqlArea((int) $id);
+            $page = $this->getCmsPageFromGraphqlArea((int)$id);
 
-            $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($page);
+            if (!isset($page['cmsPage'])) {
+                $this->setNotFound($action);
+                return;
+            }
+
+            $action->setId($page['cmsPage']['page_id'] ?? '');
+            $action->setCmsPage($page['cmsPage']);
             $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $this->setNotFound($action);
@@ -444,19 +469,23 @@ class Router extends BaseRouter
 
             $pageProvider = $objectManager->create(PageProvider::class);
             $page = null;
+            $result = [];
 
             if ($id) {
-                $page = $pageProvider->getDataByPageId($id, (int)$this->storeId);
+                $page = $this->pageRepository->getById($id);
             }
 
             if ($identifier) {
-                $page = $pageProvider->getDataByPageIdentifier($identifier, (int)$this->storeId);
+                $page = $this->pageByIdentifier->execute($identifier, (int)$this->storeId);
             }
+
+            $result['cmsPage'] = $pageProvider->convertPageData($page);
+            $result['content'] = $page->getContent();
 
             // vvv reset config area back to initial
             $objectManager->configure($configLoader->load($currentConfigArea));
 
-            return $page;
+            return $result;
         } catch (\Exception $e) {
             return null;
         }
@@ -631,3 +660,4 @@ class Router extends BaseRouter
         }
     }
 }
+
