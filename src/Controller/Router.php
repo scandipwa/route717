@@ -11,7 +11,7 @@
 namespace ScandiPWA\Router\Controller;
 
 use Magento\Framework\App\Area;
-use Magento\Framework\App\State as AppState;
+use Magento\Framework\App\State;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
@@ -58,8 +58,6 @@ class Router extends BaseRouter
         'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
         'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY
     ];
-
-    protected AppState $appState;
 
     /**
      * @var ValidationManagerInterface
@@ -138,7 +136,6 @@ class Router extends BaseRouter
 
     /**
      * Router constructor.
-     * @param AppState $appState
      * @param ActionList $actionList
      * @param ActionFactory $actionFactory
      * @param DefaultPathInterface $defaultPath
@@ -160,7 +157,6 @@ class Router extends BaseRouter
      * @param SliderResolver $sliderResolver
      */
     public function __construct(
-        AppState                     $appState,
         ActionList                   $actionList,
         ActionFactory                $actionFactory,
         DefaultPathInterface         $defaultPath,
@@ -182,7 +178,6 @@ class Router extends BaseRouter
         SliderResolver               $sliderResolver,
         array                        $ignoredURLs = []
     ) {
-        $this->appState = $appState;
         $this->scopeConfig = $scopeConfig;
         $this->themeProvider = $themeProvider;
         $this->validationManager = $validationManager;
@@ -459,7 +454,7 @@ class Router extends BaseRouter
             // vvv construct PageProvider with grahql area
             $objectManager = ObjectManager::getInstance();
             $configLoader = $objectManager->get(ConfigLoaderInterface::class);
-            $currentConfigArea = $objectManager->get(AppState::class)->getAreaCode();
+            $currentConfigArea = $objectManager->get(State::class)->getAreaCode();
             $objectManager->configure($configLoader->load(Area::AREA_GRAPHQL));
 
             $pageProvider = $objectManager->create(PageProvider::class);
