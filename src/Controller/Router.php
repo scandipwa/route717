@@ -374,8 +374,13 @@ class Router extends BaseRouter
         try {
             $page = $this->getCmsPageFromGraphqlArea((int)$id);
 
-            $action->setId($page['page_id'] ?? '');
-            $action->setCmsPage($page);
+            if (!isset($page['cmsPage'])) {
+                $this->setNotFound($action);
+                return;
+            }
+
+            $action->setId($page['cmsPage']['page_id'] ?? '');
+            $action->setCmsPage($page['cmsPage']);
             $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $this->setNotFound($action);
