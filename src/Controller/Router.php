@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -11,6 +12,7 @@ namespace ScandiPWA\Router\Controller;
 
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State as AppState;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\ActionFactory;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -22,6 +24,7 @@ use Magento\Framework\App\Router\ActionList;
 use Magento\Framework\App\Router\PathConfigInterface;
 use Magento\Framework\App\Router\Base as BaseRouter;
 use Magento\Framework\Code\NameBuilder;
+use Magento\Framework\Interception\ConfigLoaderInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
@@ -225,13 +228,13 @@ class Router extends BaseRouter
             $this->storeId
         );
 
-        if($expressions) {
+        if ($expressions) {
             $userAgentRules = json_decode($expressions, true);
 
             foreach ($userAgentRules as $userAgentRule) {
                 $regexp = stripslashes($userAgentRule['regexp']);
 
-                if(preg_match($regexp, $_SERVER['HTTP_USER_AGENT'])) {
+                if (preg_match($regexp, $_SERVER['HTTP_USER_AGENT'])) {
                     $themeId = $userAgentRule['value'];
                 }
             }
@@ -318,16 +321,12 @@ class Router extends BaseRouter
         );
 
         try {
-            $page = $this->appState->emulateAreaCode(
-                Area::AREA_GRAPHQL,
-                [$this->pageProvider, 'getDataByPageIdentifier'],
-                [$homePageIdentifier, (int) $this->storeId]
-            );
+            $page = $this->getCmsPageFromGraphqlArea(null, $homePageIdentifier);
 
             $action->setType(self::PAGE_TYPE_CMS_PAGE);
             $action->setId($page['page_id'] ?? '');
             $action->setCmsPage($page);
-            $action->setSlider($this->getSliderInformation($page['content']));
+            $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $action->setType('PWA_ROUTER');
         }
@@ -372,15 +371,11 @@ class Router extends BaseRouter
     protected function setResponseCmsPage($id, ActionInterface $action)
     {
         try {
-            $page = $this->appState->emulateAreaCode(
-                Area::AREA_GRAPHQL,
-                [$this->pageProvider, 'getDataByPageId'],
-                [(int) $id, (int) $this->storeId]
-            );
+            $page = $this->getCmsPageFromGraphqlArea((int) $id);
 
             $action->setId($page['page_id'] ?? '');
             $action->setCmsPage($page);
-            $action->setSlider($this->getSliderInformation($page['content']));
+            $action->setSlider($this->getSliderInformation($page['content'] ?? ''));
         } catch (\Throwable $th) {
             $this->setNotFound($action);
         }
@@ -456,6 +451,35 @@ class Router extends BaseRouter
         }
 
         $action->setStoreConfig($storeConfig);
+    }
+
+    protected function getCmsPageFromGraphqlArea(int $id = null, string $identifier = null)
+    {
+        try {
+            // vvv construct PageProvider with grahql area
+            $objectManager = ObjectManager::getInstance();
+            $configLoader = $objectManager->get(ConfigLoaderInterface::class);
+            $currentConfigArea = $objectManager->get(AppState::class)->getAreaCode();
+            $objectManager->configure($configLoader->load(Area::AREA_GRAPHQL));
+
+            $pageProvider = $objectManager->create(PageProvider::class);
+            $page = null;
+
+            if ($id) {
+                $page = $pageProvider->getDataByPageId($id, (int)$this->storeId);
+            }
+
+            if ($identifier) {
+                $page = $pageProvider->getDataByPageIdentifier($identifier, (int)$this->storeId);
+            }
+
+            // vvv reset config area back to initial
+            $objectManager->configure($configLoader->load($currentConfigArea));
+
+            return $page;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
@@ -584,7 +608,7 @@ class Router extends BaseRouter
     {
         $requestPath = $request->getPathInfo();
 
-        if(!$requestPath || $requestPath === '/') {
+        if (!$requestPath || $requestPath === '/') {
             return true;
         }
 
@@ -597,7 +621,7 @@ class Router extends BaseRouter
         $routes = array_filter(explode('/', $requestPath));
         $code = $routes[0] ?? '';
 
-        if(count($routes) == 1 && $code == $storeCode) {
+        if (count($routes) == 1 && $code == $storeCode) {
             return true;
         }
 
