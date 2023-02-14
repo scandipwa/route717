@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @category  ScandiPWA
  * @package   ScandiPWA\Router
@@ -661,3 +660,4 @@ class Router extends BaseRouter
         }
     }
 }
+

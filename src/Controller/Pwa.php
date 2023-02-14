@@ -66,6 +66,11 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     protected $cmsPage;
 
     /**
+     * @var array|null
+     */
+    protected $slider;
+
+    /**
      * @var string
      */
     protected $description;
