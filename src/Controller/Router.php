@@ -432,7 +432,7 @@ class Router extends BaseRouter
 
             $action->setId($category->getId() ?? '');
             $action->setName($category->getName() ?? '');
-            $action->setDisplayMode($category->getDisplayMode() ?? '');
+            $action->setDisplayMode($category->getDisplayMode() ?? 'PRODUCTS');
             $action->setDescription($category->getDescription() ?? '');
             $action->setCatalogDefaultSortBy($category->getCatalogDefaultSortBy() ?? '');
         } catch (NoSuchEntityException $e) {
