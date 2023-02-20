@@ -125,7 +125,7 @@ class Page extends ExtendedPage
     /**
      * @var string
      */
-    protected $catalogDefaultSortBy;
+    protected $categoryDefaultSortBy;
 
     /**
      * @var array|null
@@ -188,7 +188,7 @@ class Page extends ExtendedPage
         $this->cmsPage = null;
         $this->slider = null;
         $this->description = '';
-        $this->catalogDefaultSortBy = '';
+        $this->categoryDefaultSortBy = '';
         $this->storeConfig = null;
     }
 
@@ -308,19 +308,19 @@ class Page extends ExtendedPage
         return $this->description;
     }
 
-    public function setCatalogDefaultSortBy(string $catalogDefaultSortBy)
+    public function setCategoryDefaultSortBy(string $categoryDefaultSortBy)
     {
-        if($this->catalogDefaultSortBy === '') {
-            $this->catalogDefaultSortBy = $catalogDefaultSortBy;
+        if ($this->categoryDefaultSortBy === '') {
+            $this->categoryDefaultSortBy = $categoryDefaultSortBy;
             return $this;
         }
 
         return '';
     }
 
-    public function getCatalogDefaultSortBy()
+    public function getCategoryDefaultSortBy()
     {
-        return $this->catalogDefaultSortBy;
+        return $this->categoryDefaultSortBy;
     }
 
     public function setStoreConfig($storeConfig)

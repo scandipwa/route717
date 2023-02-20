@@ -78,7 +78,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
     /**
      * @var string
      */
-    protected $catalogDefaultSortBy;
+    protected $categoryDefaultSortBy;
 
     /**
      * @var array|null
@@ -186,9 +186,9 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
      * @param string $catalogDefaultSortBy
      * @return Pwa
      */
-    public function setCatalogDefaultSortBy(string $catalogDefaultSortBy): self
+    public function setCategoryDefaultSortBy(string $categoryDefaultSortBy): self
     {
-        $this->catalogDefaultSortBy = $catalogDefaultSortBy;
+        $this->categoryDefaultSortBy = $categoryDefaultSortBy;
         return $this;
     }
 
@@ -221,7 +221,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $this->cmsPage = null;
         $this->slider = null;
         $this->description = '';
-        $this->catalogDefaultSortBy = '';
+        $this->categoryDefaultSortBy = '';
         $this->storeConfig = null;
         parent::__construct($context);
     }
@@ -244,7 +244,7 @@ class Pwa extends Action implements HttpGetActionInterface, HttpPostActionInterf
         $resultLayout->setSlider($this->slider);
         $resultLayout->setDisplayMode($this->display_mode);
         $resultLayout->setDescription($this->description);
-        $resultLayout->setCatalogDefaultSortBy($this->catalogDefaultSortBy);
+        $resultLayout->setCategoryDefaultSortBy($this->categoryDefaultSortBy);
         $resultLayout->setStoreConfig($this->storeConfig);
         try{
             $templateName = 'pwa-root';
