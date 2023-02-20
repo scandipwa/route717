@@ -284,6 +284,7 @@ class Router extends BaseRouter
 
         if ($this->isHomePage($request)) {
             $this->setResponseHomePage($action);
+            $this->setStoreConfigs($action);
         }
 
         return $action;
