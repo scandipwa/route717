@@ -133,6 +133,11 @@ class Page extends ExtendedPage
     protected $storeConfig;
 
     /**
+     * @var array|null
+     */
+    protected $slider;
+
+    /**
      * Constructor
      *
      * @param View\Element\Template\Context $context
