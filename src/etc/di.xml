@@ -32,7 +32,6 @@
     <virtualType name="ScandiPWA\Router\Controller\ConfigurableRouter" type="ScandiPWA\Router\Controller\Router">
         <arguments>
             <argument name="ignoredURLs" xsi:type="array">
-                <item name="confirmSubscribeToNewsletter" xsi:type="string">^/newsletter/subscriber/confirm/.*</item>
                 <item name="unsubscribeFromNewslettter" xsi:type="string">^/newsletter/subscriber/unsubscribe/.*</item>
             </argument>
         </arguments>
