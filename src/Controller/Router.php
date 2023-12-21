@@ -501,6 +501,7 @@ class Router extends BaseRouter
      */
     protected function setNotFound(ActionInterface $action)
     {
+        $action->setType('NOT_FOUND');
         $action->setCode(404)->setPhrase('Not Found');
     }
 
