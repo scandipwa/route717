@@ -59,8 +59,7 @@ class Router extends BaseRouter
 
     const CRUCIAL_STORE_CONFIG_VALUES = [
         'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
-        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
-        // 'tax_display_type' => self::XML_PATH_TAX_DISPLAY_TYPE
+        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY
     ];
 
     const DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX';
