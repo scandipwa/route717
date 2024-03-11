@@ -60,7 +60,7 @@ class Router extends BaseRouter
     const CRUCIAL_STORE_CONFIG_VALUES = [
         'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
         'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
-        'tax_display_type' => self::XML_PATH_TAX_DISPLAY_TYPE
+        // 'tax_display_type' => self::XML_PATH_TAX_DISPLAY_TYPE
     ];
 
     const DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX';
@@ -464,9 +464,12 @@ class Router extends BaseRouter
             $storeConfig[$configKey] = $configValue;
         }
 
-        if (isset($storeConfig[self::TAX_DISPLAY_TYPE_CONFIG_KEY])) {
-            $storeConfig[self::TAX_DISPLAY_TYPE_CONFIG_KEY] = $this->convertTaxDisplayTypeValue($storeConfig[self::TAX_DISPLAY_TYPE_CONFIG_KEY]);
-        }
+        $taxDisplayConfigValue = $this->scopeConfig->getValue(
+            self::XML_PATH_TAX_DISPLAY_TYPE,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeId
+        );
+        $storeConfig[self::TAX_DISPLAY_TYPE_CONFIG_KEY] = $this->convertTaxDisplayTypeValue($taxDisplayConfigValue);
 
         $action->setStoreConfig($storeConfig);
     }
