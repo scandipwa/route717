@@ -49,15 +49,24 @@ class Router extends BaseRouter
     const XML_PATH_CMS_HOME_PAGE = 'web/default/cms_home_page';
     const XML_PATH_THEME_USER_AGENT = 'design/theme/ua_regexp';
     const XML_PATH_CATALOG_DEFAULT_SORT_BY = 'catalog/frontend/default_sort_by';
+    const XML_PATH_TAX_DISPLAY_TYPE = 'tax/display/type';
+    const XML_PATH_DEMO_NOTICE_DISPLAY = 'design/head/demonotice';
 
     const PAGE_TYPE_PRODUCT = 'PRODUCT';
     const PAGE_TYPE_CATEGORY = 'CATEGORY';
     const PAGE_TYPE_CMS_PAGE = 'CMS_PAGE';
 
+    const TAX_DISPLAY_TYPE_CONFIG_KEY = 'tax_display_type';
+
     const CRUCIAL_STORE_CONFIG_VALUES = [
         'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
-        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY
+        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
+        'demo_notice' => self::XML_PATH_DEMO_NOTICE_DISPLAY
     ];
+
+    const DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX';
+    const DISPLAY_PRODUCT_PRICES_IN_CATALOG_EXCL_TAX = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_EXCL_TAX';
+    const DISPLAY_PRODUCT_PRICES_IN_CATALOG_BOTH = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_BOTH';
 
     /**
      * @var ValidationManagerInterface
@@ -456,6 +465,13 @@ class Router extends BaseRouter
             $storeConfig[$configKey] = $configValue;
         }
 
+        $taxDisplayConfigValue = $this->scopeConfig->getValue(
+            self::XML_PATH_TAX_DISPLAY_TYPE,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeId
+        );
+        $storeConfig[self::TAX_DISPLAY_TYPE_CONFIG_KEY] = $this->convertTaxDisplayTypeValue($taxDisplayConfigValue);
+
         $action->setStoreConfig($storeConfig);
     }
 
@@ -659,6 +675,23 @@ class Router extends BaseRouter
 
             $this->_performRedirect($url);
         }
+    }
+
+    /**
+     * @param String $value
+     * @return String
+     */
+    protected function convertTaxDisplayTypeValue($value)
+    {
+        $result = self::DISPLAY_PRODUCT_PRICES_IN_CATALOG_BOTH;
+
+        if ($value === '1') {
+            $result = self::DISPLAY_PRODUCT_PRICES_IN_CATALOG_EXCL_TAX;
+        } elseif ($value === '2') {
+            $result = self::DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX;
+        }
+
+        return $result;
     }
 }
 
