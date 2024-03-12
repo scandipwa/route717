@@ -50,6 +50,7 @@ class Router extends BaseRouter
     const XML_PATH_THEME_USER_AGENT = 'design/theme/ua_regexp';
     const XML_PATH_CATALOG_DEFAULT_SORT_BY = 'catalog/frontend/default_sort_by';
     const XML_PATH_TAX_DISPLAY_TYPE = 'tax/display/type';
+    const XML_PATH_DEMO_NOTICE_DISPLAY = 'design/head/demonotice';
 
     const PAGE_TYPE_PRODUCT = 'PRODUCT';
     const PAGE_TYPE_CATEGORY = 'CATEGORY';
@@ -59,7 +60,8 @@ class Router extends BaseRouter
 
     const CRUCIAL_STORE_CONFIG_VALUES = [
         'cms_home_page' => self::XML_PATH_CMS_HOME_PAGE,
-        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY
+        'catalog_default_sort_by' => self::XML_PATH_CATALOG_DEFAULT_SORT_BY,
+        'demo_notice' => self::XML_PATH_DEMO_NOTICE_DISPLAY
     ];
 
     const DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX = 'DISPLAY_PRODUCT_PRICES_IN_CATALOG_INCL_TAX';
